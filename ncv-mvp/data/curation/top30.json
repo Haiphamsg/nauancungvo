@@ -1,0 +1,392 @@
+[
+  {
+    "slug": "trung-xao-ca-chua",
+    "core_ingredients": ["trung_ga", "ca_chua", "hanh_la", "dau_an", "nuoc_mam"],
+    "optional_ingredients": ["tieu", "duong", "hanh_tay"],
+    "steps": [
+      "Đánh tan trứng với chút nước mắm và tiêu.",
+      "Phi thơm hành với dầu, cho cà chua vào xào mềm nêm nếm.",
+      "Đổ trứng vào chảo, đảo nhẹ cho chín bông.",
+      "Thêm hành lá cắt nhỏ, tắt bếp và dọn nóng."
+    ],
+    "cook_time_minutes": 15,
+    "difficulty": "easy"
+  },
+  {
+    "slug": "thit-kho-tieu",
+    "core_ingredients": ["thit_heo_ba_chi", "toi", "tieu", "nuoc_mam", "duong"],
+    "optional_ingredients": ["hanh_tay", "ot"],
+    "steps": [
+      "Thịt cắt khúc, ướp nước mắm, tiêu, đường, tỏi.",
+      "Thắng đường tạo màu, cho thịt vào đảo săn.",
+      "Đổ nước sâm sấp, kho lửa nhỏ đến khi mềm.",
+      "Nêm lại vừa ăn, thêm tiêu xay trước khi tắt bếp."
+    ],
+    "cook_time_minutes": 45,
+    "difficulty": "medium"
+  },
+  {
+    "slug": "canh-cai-nau-thit",
+    "core_ingredients": ["thit_bam", "cai_ngot", "hanh_la", "nuoc_mam"],
+    "optional_ingredients": ["tieu"],
+    "steps": [
+      "Ướp thịt băm với nước mắm, tiêu.",
+      "Phi thơm hành, xào sơ thịt cho tơi.",
+      "Đổ nước, đun sôi rồi cho rau cải vào.",
+      "Nêm nếm vừa ăn, thêm hành lá, tắt bếp."
+    ],
+    "cook_time_minutes": 20,
+    "difficulty": "easy"
+  },
+  {
+    "slug": "rau-muong-xao-toi",
+    "core_ingredients": ["rau_muong", "toi", "dau_an", "muoi"],
+    "optional_ingredients": ["ot"],
+    "steps": [
+      "Nhặt rau muống, rửa sạch để ráo.",
+      "Phi thơm tỏi với dầu, cho rau vào xào lửa lớn.",
+      "Nêm muối hoặc nước mắm, đảo nhanh tay.",
+      "Tắt bếp khi rau vừa chín giòn."
+    ],
+    "cook_time_minutes": 10,
+    "difficulty": "easy"
+  },
+  {
+    "slug": "ga-kho-gung",
+    "core_ingredients": ["thit_ga", "gung", "toi", "nuoc_mam", "duong"],
+    "optional_ingredients": ["ot", "hanh_tay"],
+    "steps": [
+      "Ướp gà với nước mắm, đường, gừng, tỏi.",
+      "Thắng đường tạo màu, cho gà vào đảo săn.",
+      "Thêm nước sôi, kho lửa nhỏ cho gà mềm.",
+      "Nêm lại, cho thêm gừng sợi, kho sệt nước."
+    ],
+    "cook_time_minutes": 35,
+    "difficulty": "medium"
+  },
+  {
+    "slug": "dau-hu-sot-ca",
+    "core_ingredients": ["dau_hu", "ca_chua", "hanh_la", "toi", "nuoc_mam"],
+    "optional_ingredients": ["ot", "duong"],
+    "steps": [
+      "Chiên vàng đậu hũ, để ráo dầu.",
+      "Phi tỏi, xào cà chua với chút nước mắm và đường.",
+      "Cho đậu vào chảo sốt, rim 5-7 phút cho thấm.",
+      "Rắc hành lá, tắt bếp và dọn ăn nóng."
+    ],
+    "cook_time_minutes": 20,
+    "difficulty": "easy"
+  },
+  {
+    "slug": "canh-chua-ca",
+    "core_ingredients": ["ca", "thom", "ca_chua", "dua_gia", "can_tau", "nuoc_mam"],
+    "optional_ingredients": ["ot", "rau_ram"],
+    "steps": [
+      "Ướp cá nhẹ với muối, tiêu.",
+      "Nấu nước sôi với thơm và cà chua.",
+      "Thêm cá, nấu chín rồi cho giá, cần, nêm mắm chua ngọt.",
+      "Tắt bếp, thêm rau thơm và ớt nếu thích."
+    ],
+    "cook_time_minutes": 25,
+    "difficulty": "medium"
+  },
+  {
+    "slug": "bo-kho",
+    "core_ingredients": ["thit_bo", "sa", "gung", "toi", "hanh_tay", "bo_kho_bot", "nuoc_mam"],
+    "optional_ingredients": ["ca_rot", "khoai_tay"],
+    "steps": [
+      "Ướp bò với gia vị bò kho, sả, gừng, tỏi, nước mắm.",
+      "Xào săn thịt bò, thêm nước hoặc nước dừa.",
+      "Hầm nhỏ lửa đến khi bò mềm, cho cà rốt/khoai tây nếu dùng.",
+      "Nêm lại, ăn kèm bánh mì hoặc bún."
+    ],
+    "cook_time_minutes": 70,
+    "difficulty": "medium"
+  },
+  {
+    "slug": "pho-bo",
+    "core_ingredients": ["banh_pho", "thit_bo", "hanh_tay", "hanh_la", "gung", "que", "nuoc_mam"],
+    "optional_ingredients": ["ot"],
+    "steps": [
+      "Hầm xương/thịt bò với gừng, hành nướng, quế, hồi để lấy nước dùng.",
+      "Chần bánh phở qua nước sôi, để ráo.",
+      "Trụng thịt bò thái mỏng trong nước dùng.",
+      "Xếp bánh phở, thịt, chan nước dùng, thêm hành lá và gia vị."
+    ],
+    "cook_time_minutes": 90,
+    "difficulty": "hard"
+  },
+  {
+    "slug": "bun-thit-nuong",
+    "core_ingredients": ["bun", "thit_heo", "sa", "toi", "nuoc_mam", "duong"],
+    "optional_ingredients": ["rau_song", "dua_chua", "ot"],
+    "steps": [
+      "Ướp thịt heo với sả, tỏi, nước mắm, đường.",
+      "Nướng hoặc áp chảo thịt đến khi chín thơm.",
+      "Pha nước mắm chua ngọt.",
+      "Xếp bún, rau, thịt nướng, chan nước mắm, thêm đồ chua."
+    ],
+    "cook_time_minutes": 35,
+    "difficulty": "medium"
+  },
+  {
+    "slug": "banh-mi-op-la",
+    "core_ingredients": ["trung_ga", "banh_mi", "dau_an", "nuoc_tuong"],
+    "optional_ingredients": ["pate", "xuc_xich", "hanh_tay"],
+    "steps": [
+      "Làm nóng chảo, cho ít dầu.",
+      "Đập trứng vào chảo, chiên lòng đào hoặc chín tùy thích.",
+      "Nêm chút nước tương, tiêu.",
+      "Dùng kèm bánh mì, thêm pate/xúc xích nếu thích."
+    ],
+    "cook_time_minutes": 10,
+    "difficulty": "easy"
+  },
+  {
+    "slug": "com-chien-duong-chau",
+    "core_ingredients": ["com_nguoi", "trung_ga", "lap_xuong", "ca_rot", "hanh_la", "dau_an", "nuoc_tuong"],
+    "optional_ingredients": ["ngu_vi_huong"],
+    "steps": [
+      "Đánh trứng, chiên sơ và thái vụn.",
+      "Xào lạp xưởng, cà rốt với chút dầu.",
+      "Cho cơm vào đảo tơi, nêm nước tương.",
+      "Thêm trứng, hành lá, đảo đều và tắt bếp."
+    ],
+    "cook_time_minutes": 20,
+    "difficulty": "easy"
+  },
+  {
+    "slug": "mi-xao-bo",
+    "core_ingredients": ["mi_trung", "thit_bo", "toi", "ca_rot", "bong_cai", "nuoc_tuong"],
+    "optional_ingredients": ["ot", "tieu"],
+    "steps": [
+      "Luộc mì vừa chín, để ráo.",
+      "Xào bò với tỏi, nêm nước tương.",
+      "Thêm rau củ, đảo nhanh lửa lớn.",
+      "Cho mì vào trộn đều, nêm lại và dọn nóng."
+    ],
+    "cook_time_minutes": 20,
+    "difficulty": "easy"
+  },
+  {
+    "slug": "bun-rieu",
+    "core_ingredients": ["bun", "cua_dong", "trung_ga", "ca_chua", "hanh_la", "nuoc_mam"],
+    "optional_ingredients": ["dau_phu_ran", "rau_song"],
+    "steps": [
+      "Lọc cua, nấu riêu cua, vớt gạch.",
+      "Xào cà chua, cho vào nồi nước cua.",
+      "Đánh trứng với riêu, đổ vào nồi, nêm mắm.",
+      "Chần bún, chan nước dùng, thêm hành, đậu phụ rán."
+    ],
+    "cook_time_minutes": 40,
+    "difficulty": "medium"
+  },
+  {
+    "slug": "banh-xeo",
+    "core_ingredients": ["bot_banh_xeo", "thit_heo", "tom", "gia", "hanh_la", "nghe_bot"],
+    "optional_ingredients": ["rau_song"],
+    "steps": [
+      "Pha bột bánh xèo với nước và bột nghệ.",
+      "Xào nhân thịt heo và tôm sơ.",
+      "Đổ bột vào chảo nóng, thêm nhân và giá, gập bánh.",
+      "Ăn kèm rau sống và nước mắm chua ngọt."
+    ],
+    "cook_time_minutes": 40,
+    "difficulty": "medium"
+  },
+  {
+    "slug": "chao-ga",
+    "core_ingredients": ["ga", "gao", "hanh_la", "gung", "nuoc_mam"],
+    "optional_ingredients": ["tieu"],
+    "steps": [
+      "Luộc gà với gừng, lọc lấy nước dùng.",
+      "Nấu gạo với nước dùng đến khi nhừ.",
+      "Xé thịt gà, nêm cháo với nước mắm.",
+      "Cho thịt gà, hành lá vào cháo, thêm tiêu."
+    ],
+    "cook_time_minutes": 50,
+    "difficulty": "easy"
+  },
+  {
+    "slug": "ga-rang-muoi",
+    "core_ingredients": ["ga", "bot_muoi_rang", "toi", "sa"],
+    "optional_ingredients": ["ot"],
+    "steps": [
+      "Ướp gà với muối rang, tỏi, sả.",
+      "Chiên gà vàng giòn.",
+      "Áo lại gà với muối rang cho thấm.",
+      "Dọn ăn nóng."
+    ],
+    "cook_time_minutes": 30,
+    "difficulty": "medium"
+  },
+  {
+    "slug": "thit-bo-xao-toi",
+    "core_ingredients": ["thit_bo", "toi", "rau_muong", "nuoc_tuong"],
+    "optional_ingredients": ["ot"],
+    "steps": [
+      "Ướp bò với tỏi, nước tương.",
+      "Xào bò lửa lớn cho tái, trút ra.",
+      "Xào rau muống nhanh tay, nêm nhẹ.",
+      "Cho bò vào đảo lại, tắt bếp."
+    ],
+    "cook_time_minutes": 15,
+    "difficulty": "easy"
+  },
+  {
+    "slug": "suon-kho-tau",
+    "core_ingredients": ["suon_heo", "nuoc_mam", "duong", "toi"],
+    "optional_ingredients": ["trung_cut"],
+    "steps": [
+      "Chần sườn, ướp nước mắm, đường, tỏi.",
+      "Thắng đường tạo màu, cho sườn vào đảo.",
+      "Thêm nước kho nhỏ lửa đến khi mềm.",
+      "Nêm lại, thêm trứng cút nếu dùng."
+    ],
+    "cook_time_minutes": 45,
+    "difficulty": "medium"
+  },
+  {
+    "slug": "canh-bi-do-thit-bam",
+    "core_ingredients": ["bi_do", "thit_bam", "hanh_la", "nuoc_mam"],
+    "optional_ingredients": ["tieu"],
+    "steps": [
+      "Ướp thịt băm với nước mắm, tiêu.",
+      "Phi hành, xào thịt cho tơi.",
+      "Cho bí đỏ và nước, nấu mềm.",
+      "Nêm lại, thêm hành lá, tắt bếp."
+    ],
+    "cook_time_minutes": 25,
+    "difficulty": "easy"
+  },
+  {
+    "slug": "canh-rau-ngot-thit-bam",
+    "core_ingredients": ["rau_ngot", "thit_bam", "nuoc_mam"],
+    "optional_ingredients": ["tieu"],
+    "steps": [
+      "Ướp thịt băm, xào sơ.",
+      "Đổ nước, nấu sôi rồi cho rau ngót.",
+      "Nấu chín rau, nêm lại và tắt bếp.",
+      "Rắc tiêu nếu thích."
+    ],
+    "cook_time_minutes": 15,
+    "difficulty": "easy"
+  },
+  {
+    "slug": "suon-rim-mam",
+    "core_ingredients": ["suon_heo", "nuoc_mam", "duong", "toi", "ot"],
+    "optional_ingredients": [],
+    "steps": [
+      "Chần sườn, ướp nước mắm, đường, tỏi, ớt.",
+      "Rim sườn lửa nhỏ đến khi nước sánh.",
+      "Lật đều cho thấm, nêm lại vừa ăn.",
+      "Tắt bếp, rắc tiêu nếu thích."
+    ],
+    "cook_time_minutes": 35,
+    "difficulty": "medium"
+  },
+  {
+    "slug": "thit-ba-chi-rang-chay-canh",
+    "core_ingredients": ["thit_heo_ba_chi", "nuoc_mam", "toi", "ot"],
+    "optional_ingredients": [],
+    "steps": [
+      "Cắt ba chỉ lát mỏng, ướp mắm, tỏi, ớt.",
+      "Rang lửa vừa đến khi mỡ tiết ra và vàng cạnh.",
+      "Nêm lại, tắt bếp.",
+      "Dùng kèm cơm và canh."
+    ],
+    "cook_time_minutes": 25,
+    "difficulty": "easy"
+  },
+  {
+    "slug": "trung-chien-nuoc-mam",
+    "core_ingredients": ["trung_ga", "nuoc_mam", "hanh_la", "dau_an"],
+    "optional_ingredients": ["tieu"],
+    "steps": [
+      "Đánh trứng với nước mắm, tiêu, hành lá.",
+      "Làm nóng chảo dầu, đổ trứng vào chiên vàng.",
+      "Lật mặt cho chín đều.",
+      "Cắt miếng, dùng với cơm."
+    ],
+    "cook_time_minutes": 10,
+    "difficulty": "easy"
+  },
+  {
+    "slug": "dau-que-xao-toi",
+    "core_ingredients": ["dau_que", "toi", "dau_an", "muoi"],
+    "optional_ingredients": ["ot"],
+    "steps": [
+      "Rửa đậu que, chần sơ.",
+      "Phi tỏi, cho đậu vào xào lửa lớn.",
+      "Nêm muối hoặc nước mắm.",
+      "Xào chín giòn rồi tắt bếp."
+    ],
+    "cook_time_minutes": 12,
+    "difficulty": "easy"
+  },
+  {
+    "slug": "ga-nuong-mat-ong",
+    "core_ingredients": ["ga", "mat_ong", "toi", "nuoc_mam"],
+    "optional_ingredients": ["sa", "ot"],
+    "steps": [
+      "Ướp gà với mật ong, tỏi, nước mắm, sả.",
+      "Nướng trong lò hoặc nồi chiên đến chín vàng.",
+      "Quét thêm mật ong giữa chừng cho bóng đẹp.",
+      "Nghỉ vài phút rồi chặt miếng."
+    ],
+    "cook_time_minutes": 40,
+    "difficulty": "medium"
+  },
+  {
+    "slug": "nem-nuong",
+    "core_ingredients": ["thit_heo_bam", "toi", "nuoc_mam", "duong"],
+    "optional_ingredients": ["sa"],
+    "steps": [
+      "Trộn thịt băm với gia vị, quết dẻo.",
+      "Vo que hoặc viên, nướng than/lò đến chín.",
+      "Pha nước chấm chua ngọt.",
+      "Ăn kèm rau và bún/ram."
+    ],
+    "cook_time_minutes": 35,
+    "difficulty": "medium"
+  },
+  {
+    "slug": "bun-cha",
+    "core_ingredients": ["bun", "thit_heo_bam", "thit_heo_ba_chi", "nuoc_mam", "duong", "toi"],
+    "optional_ingredients": ["ot", "rau_song"],
+    "steps": [
+      "Ướp thịt băm làm chả, viên tròn; ướp ba chỉ thái mỏng.",
+      "Nướng chả và ba chỉ đến cháy xém nhẹ.",
+      "Pha nước mắm chua ngọt, thêm đu đủ/đồ chua nếu có.",
+      "Dùng kèm bún và rau thơm."
+    ],
+    "cook_time_minutes": 45,
+    "difficulty": "medium"
+  },
+  {
+    "slug": "mi-quang",
+    "core_ingredients": ["mi_quang", "thit_heo", "tom", "hanh_la", "dau_phong", "rau_song", "nuoc_mam"],
+    "optional_ingredients": ["trung_cut"],
+    "steps": [
+      "Ướp thịt, tôm với mắm, màu điều nếu có.",
+      "Xào săn, thêm nước vừa đủ xăm xắp làm nước lèo đậm.",
+      "Trụng mì Quảng, xếp tô với rau, thịt tôm, chan ít nước.",
+      "Rắc đậu phộng, hành lá, dùng kèm bánh tráng."
+    ],
+    "cook_time_minutes": 40,
+    "difficulty": "medium"
+  },
+  {
+    "slug": "ca-kho-to",
+    "core_ingredients": ["ca", "nuoc_mam", "duong", "toi", "ot"],
+    "optional_ingredients": ["tieu"],
+    "steps": [
+      "Ướp cá với nước mắm, đường, tỏi, ớt.",
+      "Thắng đường tạo màu, cho cá vào kho lửa nhỏ.",
+      "Thêm nước sôi, kho đến khi sánh.",
+      "Nêm lại, rắc tiêu trước khi tắt bếp."
+    ],
+    "cook_time_minutes": 35,
+    "difficulty": "medium"
+  }
+]
