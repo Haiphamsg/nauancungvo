@@ -130,11 +130,26 @@ export async function GET(request: NextRequest) {
     });
 
     return NextResponse.json({ items });
-  } catch (err: any) {
-    console.error("INGREDIENTS_API_ERROR:", err);
-    return NextResponse.json(
-      { ok: false, error: err?.message ?? JSON.stringify(err) },
-      { status: 500 },
+  } catch (e: any) {
+    console.error("INGREDIENTS_FETCH_ERROR", e);
+    console.error("CAUSE", e?.cause);
+    console.error("STACK", e?.stack);
+
+    return Response.json(
+      {
+        ok: false,
+        name: e?.name ?? null,
+        message: e?.message ?? String(e),
+        // cố gắng trích cause an toàn
+        cause: e?.cause
+          ? {
+              name: e.cause.name,
+              code: e.cause.code,
+              message: e.cause.message,
+            }
+          : null,
+      },
+      { status: 500 }
     );
   }
 }

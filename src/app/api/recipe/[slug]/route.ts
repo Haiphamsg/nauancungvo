@@ -97,13 +97,21 @@ export async function GET(_request: NextRequest, ctx: RouteContext) {
       ingredients: ingredientItems,
       steps: steps ?? [],
     });
-  } catch (error) {
-    console.error("Supabase error handling recipe detail", error);
-    const message =
-      error instanceof Error ? error.message : "Unknown Supabase error";
-    return NextResponse.json(
-      { ok: false, error: message },
-      { status: 500 },
+  } catch (e: any) {
+    return Response.json(
+      {
+        ok: false,
+        name: e?.name ?? null,
+        message: e?.message ?? String(e),
+        cause: e?.cause
+          ? {
+              name: e.cause.name,
+              code: e.cause.code,
+              message: e.cause.message,
+            }
+          : null,
+      },
+      { status: 500 }
     );
   }
 }
