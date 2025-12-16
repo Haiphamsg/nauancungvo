@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # ====== SỬA 3 DÒNG NÀY CHO ĐÚNG ======
-HOST="onthicongchu@anngoncungvo.fun"     # ví dụ: onthicongchu@xx.xx.xx.xx
+HOST="onthicongchu@103.106.105.141"     # ví dụ: onthicongchu@xx.xx.xx.xx
 APP_DIR="~/ncv"               # đúng Application root trên hosting
 SSH_PORT="22"                 # thường 22
 # ====================================
@@ -18,7 +18,13 @@ rsync -az --delete \
   "$HOST:$APP_DIR/"
 
 echo "==> Install deps on hosting (safe)"
-ssh -p "$SSH_PORT" "$HOST" "cd $APP_DIR && npm ci --omit=dev"
+ssh -p "$SSH_PORT" "$HOST" "
+  source /home/onthicongchu/nodevenv/ncv/20/bin/activate &&
+  cd /home/onthicongchu/ncv &&
+  npm -v &&
+  node -v &&
+  npm ci --omit=dev
+"
 
 echo "✅ Deploy upload + install done."
 echo "👉 Now go to cPanel → Setup Node.js App → Restart App"
