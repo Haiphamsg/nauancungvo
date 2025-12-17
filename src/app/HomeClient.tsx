@@ -1,11 +1,14 @@
 "use client";
-
+import { toUiError } from "@/lib/errors";
+import { ErrorBox } from "@/components/ErrorBox";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { sbSelect } from "@/lib/supabaseRest";
+import { ChipsSkeleton } from "@/components/Skeletons";
 import { GroupTabs } from "@/components/GroupTabs";
 import { IngredientChip } from "@/components/IngredientChip";
 import { StickyFooter } from "@/components/StickyFooter";
+
+import { useIngredients, type Ingredient as CachedIngredient } from "@/lib/useIngredients";
 
 type IngredientItem = {
   key: string;
@@ -29,25 +32,43 @@ const groupLabels: Record<IngredientItem["group"], string> = {
   other: "Khác",
 };
 
+function normalizeIngredient(raw: CachedIngredient): IngredientItem {
+  // Hook có thể trả group/sort_order optional; HomeClient cần group + is_core_default
+  // Nếu DB chưa có is_core_default, mặc định false để không crash.
+  return {
+    key: raw.key,
+    display_name: raw.display_name,
+    group: (raw.group as IngredientItem["group"]) ?? "other",
+    is_core_default: (raw as any).is_core_default ?? false,
+  };
+}
+
 export default function HomeClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
+  // ✅ useIngredients: cache 24h + refresh nền
+  const {
+    items: cachedItems,
+    loading: ingredientsLoading,
+    error: ingredientsError,
+  } = useIngredients();
+
+  // Local state giữ đúng behavior hiện tại
   const [ingredients, setIngredients] = useState<IngredientItem[]>([]);
-  const [ingredientMap, setIngredientMap] = useState<
-    Record<string, IngredientItem>
-  >({});
+  const [ingredientMap, setIngredientMap] = useState<Record<string, IngredientItem>>(
+    {},
+  );
   const [activeGroup, setActiveGroup] =
     useState<IngredientItem["group"]>("protein");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
   const [debounced, setDebounced] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const autoSelected = useRef(false);
   const initialKeysApplied = useRef(false);
 
+  // Debounce search
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebounced(search.trim());
@@ -69,69 +90,52 @@ export default function HomeClient() {
       }
       initialKeysApplied.current = true;
     }
-    // intentionally depends on searchParams so it runs when URL changes
   }, [searchParams]);
 
+  // ✅ Khi hook load xong -> set list + map 1 lần (và mỗi lần hook refresh)
   useEffect(() => {
-    let ignore = false;
+    // Nếu hook chưa có data thì thôi
+    if (!cachedItems) return;
 
-    const fetchIngredients = async () => {
-      try {
-        setLoading(true);
-        setError(null);
+    const list: IngredientItem[] = (cachedItems as any[]).map(normalizeIngredient);
 
-        const query = debounced?.trim();
+    setIngredients(list);
 
-        const list = await sbSelect<IngredientItem[]>("ingredients", {
-          select: "key,display_name,group",
-          ...(query
-            ? { or: `(display_name.ilike.*${query}*,key.ilike.*${query}*)` }
-            : {}),
-          order: "group,display_name",
-        });
+    setIngredientMap(() => {
+      const next: Record<string, IngredientItem> = {};
+      list.forEach((ing) => {
+        next[ing.key] = ing;
+      });
+      return next;
+    });
 
-        if (ignore) return;
+    // Auto-select defaults (chỉ 1 lần, chỉ khi không có query + không có keys từ URL)
+    const query = debounced?.trim();
+    if (!autoSelected.current && !query && !initialKeysApplied.current) {
+      const defaults = list
+        .filter((ing) => ing.is_core_default)
+        .map((ing) => ing.key);
 
-        setIngredients(list);
+      if (defaults.length) setSelected(new Set(defaults));
+      autoSelected.current = true;
+    }
+  }, [cachedItems, debounced]);
 
-        setIngredientMap((prev) => {
-          const next = { ...prev };
-          list.forEach((ing) => {
-            next[ing.key] = ing;
-          });
-          return next;
-        });
-
-        if (!autoSelected.current && !query && !initialKeysApplied.current) {
-          const defaults = list
-            .filter((ing) => ing.is_core_default)
-            .map((ing) => ing.key);
-
-          if (defaults.length) setSelected(new Set(defaults));
-          autoSelected.current = true;
-        }
-      } catch (err) {
-        if (ignore) return;
-        const message =
-          err instanceof Error ? err.message : "Không tải được danh sách nguyên liệu";
-        setError(message);
-      } finally {
-        if (!ignore) setLoading(false);
-      }
-    };
-
-    fetchIngredients();
-
-    return () => {
-      ignore = true;
-    };
-  }, [debounced]);
-
+  // Search/filter client-side (không gọi DB theo search nữa -> nhẹ và ổn hosting)
+  const filteredIngredients = useMemo(() => {
+    const q = debounced.trim().toLowerCase();
+    if (!q) return ingredients;
+    return ingredients.filter((i) => {
+      const dn = (i.display_name ?? "").toLowerCase();
+      const k = (i.key ?? "").toLowerCase();
+      return dn.includes(q) || k.includes(q);
+    });
+  }, [ingredients, debounced]);
 
   const visibleIngredients = useMemo(() => {
-    if (debounced) return ingredients;
-    return ingredients.filter((item) => item.group === activeGroup);
-  }, [ingredients, debounced, activeGroup]);
+    if (debounced) return filteredIngredients;
+    return filteredIngredients.filter((item) => item.group === activeGroup);
+  }, [filteredIngredients, debounced, activeGroup]);
 
   const toggleSelect = (key: string) => {
     setSelected((prev) => {
@@ -149,6 +153,9 @@ export default function HomeClient() {
     params.set("tag", "weekday");
     router.push(`/recommendations?${params.toString()}`);
   };
+
+  const loading = ingredientsLoading;
+  const error = ingredientsError;
 
   return (
     <div className="min-h-screen bg-white">
@@ -213,12 +220,11 @@ export default function HomeClient() {
           ) : null}
 
           {loading ? (
-            <div className="col-span-full flex items-center gap-2 text-sm text-slate-600">
-              <span className="h-4 w-4 animate-spin rounded-full border-2 border-emerald-500 border-t-transparent" />
-              Đang tải...
-            </div>
+            <ChipsSkeleton count={12} />
           ) : error ? (
-            <div className="col-span-full text-sm text-red-600">{error}</div>
+            <div className="col-span-full">
+            <ErrorBox err={toUiError(new Error(error))} />
+            </div>
           ) : visibleIngredients.length === 0 ? (
             <div className="col-span-full rounded-md border border-dashed border-slate-200 p-4 text-center text-sm text-slate-600">
               Không có nguyên liệu phù hợp. Thử tìm từ khóa khác.

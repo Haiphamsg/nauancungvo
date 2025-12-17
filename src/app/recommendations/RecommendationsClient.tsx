@@ -1,11 +1,13 @@
 "use client";
-
+import { RecipeCardsSkeleton } from "@/components/Skeletons";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { RecipeCard } from "@/components/RecipeCard";
 import { parseKeysParam, buildQueryParams } from "@/lib/query";
 import { sbRpc } from "@/lib/supabaseRest";
+import { toUiError } from "@/lib/errors";
+import { ErrorBox } from "@/components/ErrorBox";
 
 type RecommendationItem = {
   name: string;
@@ -177,16 +179,9 @@ export default function RecommendationsClient() {
         </div>
 
         {loading ? (
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {Array.from({ length: 4 }).map((_, idx) => (
-              <div
-                key={idx}
-                className="h-24 animate-pulse rounded-lg border border-slate-200 bg-slate-100"
-              />
-            ))}
-          </div>
+          <RecipeCardsSkeleton count={6} />
         ) : error ? (
-          <div className="text-sm text-red-600">{error}</div>
+          <ErrorBox err={toUiError(new Error(error))} />
         ) : emptyState ? (
           emptyState
         ) : items.length === 0 ? (
