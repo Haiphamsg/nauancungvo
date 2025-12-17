@@ -81,14 +81,14 @@ export default function RecipeDetailPage() {
     const qs = params.toString();
     setBackHref(`/recommendations${qs ? `?${qs}` : ""}`);
 
-    // ✅ set selected keys set (để highlight "có/thiếu")
+/*     // ✅ set selected keys set (để highlight "có/thiếu")
     const selectedKeys =
       keysParam
         ?.split(",")
         .map((k) => k.trim())
         .filter(Boolean) ?? [];
     setSelectedKeysSet(new Set(selectedKeys));
-  }, [searchParams]);
+  }, [searchParams]); */
 
 
   useEffect(() => {
@@ -194,15 +194,28 @@ export default function RecipeDetailPage() {
   }, [data]);
   const ingredientStats = useMemo(() => {
     const list = sortedIngredients ?? [];
-    const have = list.filter((i) => i.key && selectedKeysSet.has(i.key)).length;
-    const miss = list.filter((i) => i.key && !selectedKeysSet.has(i.key)).length;
+
+    const have = list.filter(
+      (i) => i.key && checked.has(i.key)
+    ).length;
+
+    const miss = list.filter(
+      (i) => i.key && !checked.has(i.key)
+    ).length;
 
     const coreList = list.filter((i) => i.role === "core");
-    const coreHave = coreList.filter((i) => i.key && selectedKeysSet.has(i.key)).length;
-    const coreMiss = coreList.filter((i) => i.key && !selectedKeysSet.has(i.key)).length;
+
+    const coreHave = coreList.filter(
+      (i) => i.key && checked.has(i.key)
+    ).length;
+
+    const coreMiss = coreList.filter(
+      (i) => i.key && !checked.has(i.key)
+    ).length;
 
     return { have, miss, coreHave, coreMiss };
-  }, [sortedIngredients, selectedKeysSet]);
+  }, [sortedIngredients, checked]);
+
 
   const toggleChecked = (key?: string | null) => {
     if (!key) return;
@@ -288,7 +301,7 @@ export default function RecipeDetailPage() {
               Copy danh sách mua sắm
             </button>
           </div>
-          
+
           <div className="flex flex-wrap items-center gap-2 text-sm">
             <span className="text-slate-600">
               Bạn đang có{" "}
@@ -317,7 +330,7 @@ export default function RecipeDetailPage() {
 
           <ul className="flex flex-col gap-3">
             {(sortedIngredients ?? []).map((item) => {
-              const hasIt = item.key ? selectedKeysSet.has(item.key) : false;
+              const hasIt = item.key ? checked.has(item.key) : false;
               return (
                 <li
                   key={item.key ?? `${item.display_name}-${item.role}`}
