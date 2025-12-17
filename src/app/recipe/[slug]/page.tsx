@@ -51,11 +51,13 @@ export default function RecipeDetailPage() {
 
   useEffect(() => {
     const params = new URLSearchParams();
-    const keysParam = searchParams.get("keys");
+    let keysParam = searchParams.get("keys");
     const tagParam = searchParams.get("tag");
+
     if (keysParam) params.set("keys", keysParam);
     if (tagParam) params.set("tag", tagParam);
 
+    // Nếu không có keys/tag trên URL, fallback sessionStorage
     if (!keysParam && !tagParam) {
       const saved =
         typeof window !== "undefined"
@@ -64,7 +66,10 @@ export default function RecipeDetailPage() {
       if (saved) {
         try {
           const parsed = JSON.parse(saved) as { keys?: string; tag?: string };
-          if (parsed.keys) params.set("keys", parsed.keys);
+          if (parsed.keys) {
+            keysParam = parsed.keys;
+            params.set("keys", parsed.keys);
+          }
           if (parsed.tag) params.set("tag", parsed.tag);
         } catch {
           // ignore
@@ -72,9 +77,19 @@ export default function RecipeDetailPage() {
       }
     }
 
+    // ✅ set back link
     const qs = params.toString();
     setBackHref(`/recommendations${qs ? `?${qs}` : ""}`);
+
+    // ✅ set selected keys set (để highlight "có/thiếu")
+    const selectedKeys =
+      keysParam
+        ?.split(",")
+        .map((k) => k.trim())
+        .filter(Boolean) ?? [];
+    setSelectedKeysSet(new Set(selectedKeys));
   }, [searchParams]);
+
 
   useEffect(() => {
     if (!slug) return;
@@ -177,6 +192,17 @@ export default function RecipeDetailPage() {
       return (a.display_name ?? "").localeCompare(b.display_name ?? "");
     });
   }, [data]);
+  const ingredientStats = useMemo(() => {
+    const list = sortedIngredients ?? [];
+    const have = list.filter((i) => i.key && selectedKeysSet.has(i.key)).length;
+    const miss = list.filter((i) => i.key && !selectedKeysSet.has(i.key)).length;
+
+    const coreList = list.filter((i) => i.role === "core");
+    const coreHave = coreList.filter((i) => i.key && selectedKeysSet.has(i.key)).length;
+    const coreMiss = coreList.filter((i) => i.key && !selectedKeysSet.has(i.key)).length;
+
+    return { have, miss, coreHave, coreMiss };
+  }, [sortedIngredients, selectedKeysSet]);
 
   const toggleChecked = (key?: string | null) => {
     if (!key) return;
@@ -262,55 +288,103 @@ export default function RecipeDetailPage() {
               Copy danh sách mua sắm
             </button>
           </div>
+          
+          <div className="flex flex-wrap items-center gap-2 text-sm">
+            <span className="text-slate-600">
+              Bạn đang có{" "}
+              <span className="font-semibold text-emerald-700">
+                {ingredientStats.have}
+              </span>{" "}
+              nguyên liệu, còn thiếu{" "}
+              <span className="font-semibold text-amber-700">
+                {ingredientStats.miss}
+              </span>
+              .
+            </span>
+
+            <span className="text-slate-500">
+              (Core: có{" "}
+              <span className="font-semibold text-emerald-700">
+                {ingredientStats.coreHave}
+              </span>
+              , thiếu{" "}
+              <span className="font-semibold text-amber-700">
+                {ingredientStats.coreMiss}
+              </span>
+              )
+            </span>
+          </div>
 
           <ul className="flex flex-col gap-3">
-            {(sortedIngredients ?? []).map((item) => (
-              <li
-                key={item.key ?? `${item.display_name}-${item.role}`}
-                className="flex items-start justify-between gap-3 rounded-md border border-slate-200 p-3"
-              >
-                <div className="flex items-start gap-3">
-                  <label
-                    className="sr-only"
-                    htmlFor={`ingredient-checkbox-${item.key ?? item.display_name}`}
-                  >
-                    {item.display_name ?? "Nguyên liệu"}
-                  </label>
-
-                  <input
-                    id={`ingredient-checkbox-${item.key ?? item.display_name}`}
-                    type="checkbox"
-                    disabled={!item.key}
-                    checked={item.key ? checked.has(item.key) : false}
-                    onChange={() => {
-                      if (!item.key) return;
-                      toggleChecked(item.key);
-                    }}
-                    className="mt-1 h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 disabled:opacity-40"
-                    title={item.display_name ?? "Nguyên liệu"}
-                  />
-
-                  <div className="flex flex-col">
-                    <span className="text-sm font-semibold text-slate-900">
+            {(sortedIngredients ?? []).map((item) => {
+              const hasIt = item.key ? selectedKeysSet.has(item.key) : false;
+              return (
+                <li
+                  key={item.key ?? `${item.display_name}-${item.role}`}
+                  className={[
+                    "flex items-start justify-between gap-3 rounded-md border p-3",
+                    hasIt
+                      ? "border-emerald-200 bg-emerald-50"
+                      : "border-amber-200 bg-amber-50",
+                  ].join(" ")}
+                >
+                  <div className="flex items-start gap-3">
+                    <label
+                      className="sr-only"
+                      htmlFor={`ingredient-checkbox-${item.key ?? item.display_name}`}
+                    >
                       {item.display_name ?? "Nguyên liệu"}
-                    </span>
-                    <span className="text-xs text-slate-600">
-                      {item.role === "core" ? "Core" : "Tùy chọn"}
-                    </span>
+                    </label>
 
-                    {item.amount ? (
-                      <span className="text-sm text-slate-700">
-                        {item.amount}
-                        {item.unit ? ` ${item.unit}` : ""}
-                        {item.note ? ` (${item.note})` : ""}
-                      </span>
-                    ) : item.note ? (
-                      <span className="text-sm text-slate-700">{item.note}</span>
-                    ) : null}
+                    <input
+                      id={`ingredient-checkbox-${item.key ?? item.display_name}`}
+                      type="checkbox"
+                      disabled={!item.key}
+                      checked={item.key ? checked.has(item.key) : false}
+                      onChange={() => {
+                        if (!item.key) return;
+                        toggleChecked(item.key);
+                      }}
+                      className="mt-1 h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 disabled:opacity-40"
+                      title={item.display_name ?? "Nguyên liệu"}
+                    />
+
+                    <div className="flex flex-col">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-semibold text-slate-900">
+                          {item.display_name ?? "Nguyên liệu"}
+                        </span>
+
+                        <span
+                          className={[
+                            "rounded-full px-2 py-0.5 text-xs font-semibold",
+                            hasIt
+                              ? "bg-emerald-100 text-emerald-800"
+                              : "bg-amber-100 text-amber-800",
+                          ].join(" ")}
+                        >
+                          {hasIt ? "Đang có" : "Còn thiếu"}
+                        </span>
+
+                        <span className="text-xs text-slate-600">
+                          {item.role === "core" ? "Core" : "Tùy chọn"}
+                        </span>
+                      </div>
+
+                      {item.amount ? (
+                        <span className="text-sm text-slate-700">
+                          {item.amount}
+                          {item.unit ? ` ${item.unit}` : ""}
+                          {item.note ? ` (${item.note})` : ""}
+                        </span>
+                      ) : item.note ? (
+                        <span className="text-sm text-slate-700">{item.note}</span>
+                      ) : null}
+                    </div>
                   </div>
-                </div>
-              </li>
-            ))}
+                </li>
+              );
+            })}
           </ul>
         </section>
 
