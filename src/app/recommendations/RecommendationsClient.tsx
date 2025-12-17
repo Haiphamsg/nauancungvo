@@ -205,7 +205,6 @@ export default function RecommendationsClient() {
                 name={item.name}
                 slug={item.slug}
                 category={item.category}
-                tag={item.tag}
                 cook_time_minutes={item.cook_time_minutes}
                 core_missing={item.core_missing}
                 missing_core_names={item.missing_core_names}
