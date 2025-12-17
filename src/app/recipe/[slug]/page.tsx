@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { sbSelect } from "@/lib/supabaseRest";
 
@@ -46,9 +46,17 @@ export default function RecipeDetailPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // ✅ ownedKeysSet: nguyên liệu user đang có (từ URL / sessionStorage)
+  const [ownedKeysSet, setOwnedKeysSet] = useState<Set<string>>(new Set());
+
+  // ✅ checked: checklist user tick (độc lập với ownedKeysSet)
   const [checked, setChecked] = useState<Set<string>>(new Set());
+
   const [backHref, setBackHref] = useState("/recommendations");
 
+  // const checklistInitialized = useRef(false);
+
+  // Build back link + parse keys user đang có
   useEffect(() => {
     const params = new URLSearchParams();
     let keysParam = searchParams.get("keys");
@@ -77,20 +85,20 @@ export default function RecipeDetailPage() {
       }
     }
 
-    // ✅ set back link
+    // set back link
     const qs = params.toString();
     setBackHref(`/recommendations${qs ? `?${qs}` : ""}`);
 
-/*     // ✅ set selected keys set (để highlight "có/thiếu")
-    const selectedKeys =
+    // set owned keys
+    const owned =
       keysParam
         ?.split(",")
         .map((k) => k.trim())
         .filter(Boolean) ?? [];
-    setSelectedKeysSet(new Set(selectedKeys));
-  }, [searchParams]); */
+    setOwnedKeysSet(new Set(owned));
+  }, [searchParams]);
 
-
+  // Fetch recipe + ingredients + steps
   useEffect(() => {
     if (!slug) return;
 
@@ -119,7 +127,6 @@ export default function RecipeDetailPage() {
         }
 
         // 2) ingredients with join
-        // Supabase REST join syntax: ingredients(key,display_name)
         const riRows = await sbSelect<any[]>("recipe_ingredients", {
           select: "role,amount,unit,note,ingredients(key,display_name)",
           recipe_id: `eq.${recipe.id}`,
@@ -159,12 +166,17 @@ export default function RecipeDetailPage() {
 
         setData(json);
 
-        const initialChecked = new Set(
-          ingredientItems
-            .map((ing) => ing.key)
-            .filter((key): key is string => Boolean(key)),
-        );
-        setChecked(initialChecked);
+        // ✅ Init checklist 1 lần:
+        // auto-check những ingredient mà user "đang có" (ownedKeysSet)
+        // để checklist hợp lý ngay từ đầu, nhưng không override sau khi user tick.
+/*         if (!checklistInitialized.current) {
+          const initial = new Set<string>();
+          for (const ing of ingredientItems) {
+            if (ing.key && ownedKeysSet.has(ing.key)) initial.add(ing.key);
+          }
+          setChecked(initial);
+          checklistInitialized.current = true;
+        } */
       } catch (err) {
         if (controller.signal.aborted) return;
         const message =
@@ -180,7 +192,7 @@ export default function RecipeDetailPage() {
     return () => {
       controller.abort();
     };
-  }, [slug]);
+  }, [slug, ownedKeysSet]);
 
   const sortedIngredients = useMemo(() => {
     if (!data) return [];
@@ -192,31 +204,22 @@ export default function RecipeDetailPage() {
       return (a.display_name ?? "").localeCompare(b.display_name ?? "");
     });
   }, [data]);
+
+  // ✅ Summary dựa theo ownedKeysSet (đang có/thiếu)
   const ingredientStats = useMemo(() => {
     const list = sortedIngredients ?? [];
 
-    const have = list.filter(
-      (i) => i.key && checked.has(i.key)
-    ).length;
-
-    const miss = list.filter(
-      (i) => i.key && !checked.has(i.key)
-    ).length;
+    const have = list.filter((i) => i.key && ownedKeysSet.has(i.key)).length;
+    const miss = list.filter((i) => i.key && !ownedKeysSet.has(i.key)).length;
 
     const coreList = list.filter((i) => i.role === "core");
-
-    const coreHave = coreList.filter(
-      (i) => i.key && checked.has(i.key)
-    ).length;
-
-    const coreMiss = coreList.filter(
-      (i) => i.key && !checked.has(i.key)
-    ).length;
+    const coreHave = coreList.filter((i) => i.key && ownedKeysSet.has(i.key)).length;
+    const coreMiss = coreList.filter((i) => i.key && !ownedKeysSet.has(i.key)).length;
 
     return { have, miss, coreHave, coreMiss };
-  }, [sortedIngredients, checked]);
+  }, [sortedIngredients, ownedKeysSet]);
 
-
+  // ✅ checkbox = checklist (không liên quan ownedKeysSet)
   const toggleChecked = (key?: string | null) => {
     if (!key) return;
     setChecked((prev) => {
@@ -238,9 +241,7 @@ export default function RecipeDetailPage() {
         amount ? `: ${amount}` : ""
       }${note}`;
     });
-    const text = [`${data.recipe.name} - danh sách nguyên liệu`, ...lines].join(
-      "\n",
-    );
+    const text = [`${data.recipe.name} - danh sách nguyên liệu`, ...lines].join("\n");
     try {
       await navigator.clipboard.writeText(text);
     } catch (err) {
@@ -283,7 +284,9 @@ export default function RecipeDetailPage() {
             {data.recipe.cook_time_minutes ? (
               <span>Thời gian: {data.recipe.cook_time_minutes} phút</span>
             ) : null}
-            {data.recipe.difficulty ? <span>Độ khó: {data.recipe.difficulty}</span> : null}
+            {data.recipe.difficulty ? (
+              <span>Độ khó: {data.recipe.difficulty}</span>
+            ) : null}
           </div>
           {data.recipe.short_note ? (
             <p className="text-sm text-slate-700">{data.recipe.short_note}</p>
@@ -292,7 +295,8 @@ export default function RecipeDetailPage() {
 
         <section className="flex flex-col gap-3">
           <h2 className="text-lg font-semibold text-slate-900">Nguyên liệu</h2>
-          <div>
+
+          <div className="flex items-center justify-between gap-3">
             <button
               type="button"
               onClick={handleCopy}
@@ -300,6 +304,10 @@ export default function RecipeDetailPage() {
             >
               Copy danh sách mua sắm
             </button>
+
+            <span className="text-xs text-slate-500">
+              Checkbox = checklist (bạn tự tick)
+            </span>
           </div>
 
           <div className="flex flex-wrap items-center gap-2 text-sm">
@@ -330,7 +338,8 @@ export default function RecipeDetailPage() {
 
           <ul className="flex flex-col gap-3">
             {(sortedIngredients ?? []).map((item) => {
-              const hasIt = item.key ? checked.has(item.key) : false;
+              const hasIt = item.key ? ownedKeysSet.has(item.key) : false;
+
               return (
                 <li
                   key={item.key ?? `${item.display_name}-${item.role}`}
@@ -354,10 +363,7 @@ export default function RecipeDetailPage() {
                       type="checkbox"
                       disabled={!item.key}
                       checked={item.key ? checked.has(item.key) : false}
-                      onChange={() => {
-                        if (!item.key) return;
-                        toggleChecked(item.key);
-                      }}
+                      onChange={() => toggleChecked(item.key)}
                       className="mt-1 h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 disabled:opacity-40"
                       title={item.display_name ?? "Nguyên liệu"}
                     />
