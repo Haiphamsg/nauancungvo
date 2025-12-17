@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-
+import { sbSelect } from "@/lib/supabaseRest";
 import { GroupTabs } from "@/components/GroupTabs";
 import { IngredientChip } from "@/components/IngredientChip";
 import { StickyFooter } from "@/components/StickyFooter";
@@ -80,20 +80,18 @@ export default function HomeClient() {
         setLoading(true);
         setError(null);
 
-        const params = new URLSearchParams();
-        if (debounced) params.set("q", debounced);
+        const query = debounced?.trim();
 
-        const url = `/api/ingredients${
-          params.toString() ? `?${params.toString()}` : ""
-        }`;
+        const list = await sbSelect<IngredientItem[]>("ingredients", {
+          select: "key,display_name,group",
+          ...(query
+            ? { or: `(display_name.ilike.*${query}*,key.ilike.*${query}*)` }
+            : {}),
+          order: "group,display_name",
+        });
 
-        const res = await fetch(url);
-        if (!res.ok) throw new Error("Không tải được danh sách nguyên liệu");
-
-        const data = await res.json();
         if (ignore) return;
 
-        const list: IngredientItem[] = data.items ?? [];
         setIngredients(list);
 
         setIngredientMap((prev) => {
@@ -104,11 +102,7 @@ export default function HomeClient() {
           return next;
         });
 
-        // Auto-select defaults (only when:
-        // - not searching
-        // - URL didn't provide initial keys
-        // - and we haven't auto-selected yet)
-        if (!autoSelected.current && !debounced && !initialKeysApplied.current) {
+        if (!autoSelected.current && !query && !initialKeysApplied.current) {
           const defaults = list
             .filter((ing) => ing.is_core_default)
             .map((ing) => ing.key);
@@ -119,9 +113,7 @@ export default function HomeClient() {
       } catch (err) {
         if (ignore) return;
         const message =
-          err instanceof Error
-            ? err.message
-            : "Không tải được danh sách nguyên liệu";
+          err instanceof Error ? err.message : "Không tải được danh sách nguyên liệu";
         setError(message);
       } finally {
         if (!ignore) setLoading(false);
@@ -134,6 +126,7 @@ export default function HomeClient() {
       ignore = true;
     };
   }, [debounced]);
+
 
   const visibleIngredients = useMemo(() => {
     if (debounced) return ingredients;

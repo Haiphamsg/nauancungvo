@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-
 import { createSupabaseServer } from "@/lib/supabase/server";
 
 type RouteContext = {
@@ -8,9 +7,11 @@ type RouteContext = {
 
 export async function GET(_request: NextRequest, ctx: RouteContext) {
   const { slug } = await ctx.params;
-  const supabase = createSupabaseServer();
 
   try {
+    const supabase = createSupabaseServer();
+
+    // 1) Recipe
     const { data: recipe, error: recipeError } = await supabase
       .from("recipes")
       .select(
@@ -31,7 +32,10 @@ export async function GET(_request: NextRequest, ctx: RouteContext) {
 
     if (recipeError) {
       console.error("Supabase error fetching recipe", recipeError);
-      throw recipeError;
+      return NextResponse.json(
+        { ok: false, error: recipeError.message },
+        { status: 500 },
+      );
     }
 
     if (!recipe) {
@@ -41,6 +45,7 @@ export async function GET(_request: NextRequest, ctx: RouteContext) {
       );
     }
 
+    // 2) Ingredients + join ingredients table
     const { data: ingredients, error: ingredientsError } = await supabase
       .from("recipe_ingredients")
       .select(
@@ -49,10 +54,9 @@ export async function GET(_request: NextRequest, ctx: RouteContext) {
           amount,
           unit,
           note,
-          ingredients!inner(
+          ingredients:ingredients(
             key,
-            display_name,
-            is_core_default
+            display_name
           )
         `,
       )
@@ -62,11 +66,14 @@ export async function GET(_request: NextRequest, ctx: RouteContext) {
 
     if (ingredientsError) {
       console.error("Supabase error fetching ingredients", ingredientsError);
-      throw ingredientsError;
+      return NextResponse.json(
+        { ok: false, error: ingredientsError.message },
+        { status: 500 },
+      );
     }
 
     const ingredientItems =
-      ingredients?.map((item) => {
+      (ingredients as any[] | null)?.map((item) => {
         const ing = Array.isArray(item.ingredients)
           ? item.ingredients[0]
           : item.ingredients;
@@ -81,6 +88,7 @@ export async function GET(_request: NextRequest, ctx: RouteContext) {
         };
       }) ?? [];
 
+    // 3) Steps
     const { data: steps, error: stepsError } = await supabase
       .from("recipe_steps")
       .select("step_no, content, tip")
@@ -89,29 +97,28 @@ export async function GET(_request: NextRequest, ctx: RouteContext) {
 
     if (stepsError) {
       console.error("Supabase error fetching steps", stepsError);
-      throw stepsError;
+      return NextResponse.json(
+        { ok: false, error: stepsError.message },
+        { status: 500 },
+      );
     }
 
     return NextResponse.json({
+      ok: true,
       recipe,
       ingredients: ingredientItems,
       steps: steps ?? [],
     });
   } catch (e: any) {
-    return Response.json(
+    console.error("API /api/recipe/[slug] unexpected error", e);
+
+    return NextResponse.json(
       {
         ok: false,
         name: e?.name ?? null,
         message: e?.message ?? String(e),
-        cause: e?.cause
-          ? {
-              name: e.cause.name,
-              code: e.cause.code,
-              message: e.cause.message,
-            }
-          : null,
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

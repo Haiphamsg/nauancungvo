@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 
 import { RecipeCard } from "@/components/RecipeCard";
 import { parseKeysParam, buildQueryParams } from "@/lib/query";
+import { sbRpc } from "@/lib/supabaseRest";
 
 type RecommendationItem = {
   name: string;
@@ -15,7 +16,6 @@ type RecommendationItem = {
   core_missing?: number | null;
   missing_core_names?: string[] | null;
 };
-
 
 const tagLabels: Record<string, string> = {
   weekday: "Trong tuần",
@@ -29,6 +29,8 @@ export default function RecommendationsClient() {
   const [items, setItems] = useState<RecommendationItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // tránh gọi lại khi signature y hệt
   const lastSignature = useRef<string | null>(null);
 
   const keys = useMemo(
@@ -41,52 +43,52 @@ export default function RecommendationsClient() {
     if (!keys.length) {
       lastSignature.current = null;
       setItems([]);
+      setError(null);
+      setLoading(false);
       return;
     }
 
-    let ignore = false;
     const signature = `${keys.join(",")}::${tag}`;
     if (signature === lastSignature.current) return;
     lastSignature.current = signature;
+
+    const controller = new AbortController();
 
     const fetchData = async () => {
       try {
         setLoading(true);
         setError(null);
 
-        const res = await fetch("/api/recommend", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            selected_keys: keys,
-            prefer_tag: tag,
-            limit_n: 30,
-            missing_core_allow: 2,
-          }),
+        // RPC trả thẳng array rows
+        const rows = await sbRpc<RecommendationItem[]>("recommend_recipes", {
+          selected_keys: keys,
+          prefer_tag: tag,
+          limit_n: 30,
+          missing_core_allow: 2,
         });
 
-        if (!res.ok) throw new Error("Không tải được gợi ý món ăn");
+        if (controller.signal.aborted) return;
 
-        const data = await res.json();
-        if (ignore) return;
-
-        setItems(data.items ?? []);
+        setItems(rows ?? []);
       } catch (err) {
         lastSignature.current = null;
-        if (ignore) return;
+        if (controller.signal.aborted) return;
 
         const message =
-          err instanceof Error ? err.message : "Không tải được gợi ý món ăn";
+          err instanceof Error
+            ? err.message
+            : "Không tải được gợi ý món ăn";
         setError(message);
+        setItems([]);
       } finally {
-        if (!ignore) setLoading(false);
+        if (!controller.signal.aborted) setLoading(false);
       }
     };
 
     fetchData();
 
     return () => {
-      ignore = true;
+      controller.abort();
     };
   }, [keys, tag]);
 
@@ -146,7 +148,9 @@ export default function RecommendationsClient() {
             <button
               type="button"
               onClick={() =>
-                router.push(`/?${buildQueryParams({ keys: keys.join(","), tag })}`)
+                router.push(
+                  `/?${buildQueryParams({ keys: keys.join(","), tag })}`,
+                )
               }
               className="rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold text-slate-700 hover:border-emerald-400"
             >

@@ -2,41 +2,50 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { sbSelect } from "@/lib/supabaseRest";
+
+type RecipeRow = {
+  id: string; // uuid
+  name: string;
+  slug: string;
+  tag: string | null;
+  category: string | null;
+  cook_time_minutes: number | null;
+  difficulty: string | null;
+  image_url: string | null;
+  short_note: string | null;
+};
+
+type IngredientItem = {
+  key: string | null;
+  display_name: string | null;
+  role: string | null;
+  amount: number | null;
+  unit: string | null;
+  note: string | null;
+};
+
+type StepItem = {
+  step_no: number;
+  content: string;
+  tip: string | null;
+};
 
 type RecipeResponse = {
-  recipe: {
-    id: number;
-    name: string;
-    slug: string;
-    tag: string | null;
-    category: string | null;
-    cook_time_minutes: number | null;
-    difficulty: string | null;
-    image_url: string | null;
-    short_note: string | null;
-  };
-  ingredients: Array<{
-    key: string | null;
-    display_name: string | null;
-    role: string | null;
-    amount: number | null;
-    unit: string | null;
-    note: string | null;
-  }>;
-  steps: Array<{
-    step_no: number;
-    content: string;
-    tip: string | null;
-  }>;
+  recipe: RecipeRow;
+  ingredients: IngredientItem[];
+  steps: StepItem[];
 };
 
 export default function RecipeDetailPage() {
   const { slug } = useParams<{ slug: string }>();
   const router = useRouter();
   const searchParams = useSearchParams();
+
   const [data, setData] = useState<RecipeResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
   const [checked, setChecked] = useState<Set<string>>(new Set());
   const [backHref, setBackHref] = useState("/recommendations");
 
@@ -46,6 +55,7 @@ export default function RecipeDetailPage() {
     const tagParam = searchParams.get("tag");
     if (keysParam) params.set("keys", keysParam);
     if (tagParam) params.set("tag", tagParam);
+
     if (!keysParam && !tagParam) {
       const saved =
         typeof window !== "undefined"
@@ -61,44 +71,99 @@ export default function RecipeDetailPage() {
         }
       }
     }
+
     const qs = params.toString();
     setBackHref(`/recommendations${qs ? `?${qs}` : ""}`);
   }, [searchParams]);
 
   useEffect(() => {
     if (!slug) return;
-    let ignore = false;
+
+    const controller = new AbortController();
+
     const fetchRecipe = async () => {
       try {
         setLoading(true);
         setError(null);
-        const res = await fetch(`/api/recipe/${slug}`);
-        if (!res.ok) {
-          throw new Error("Không tải được công thức");
+
+        // 1) recipe by slug
+        const recipeRows = await sbSelect<RecipeRow[]>("recipes", {
+          select:
+            "id,name,slug,tag,category,cook_time_minutes,difficulty,image_url,short_note",
+          slug: `eq.${slug}`,
+          limit: 1,
+        });
+
+        if (controller.signal.aborted) return;
+
+        const recipe = recipeRows?.[0];
+        if (!recipe) {
+          setError("Không tìm thấy công thức");
+          setData(null);
+          return;
         }
-        const json = (await res.json()) as RecipeResponse;
-        if (ignore) return;
+
+        // 2) ingredients with join
+        // Supabase REST join syntax: ingredients(key,display_name)
+        const riRows = await sbSelect<any[]>("recipe_ingredients", {
+          select: "role,amount,unit,note,ingredients(key,display_name)",
+          recipe_id: `eq.${recipe.id}`,
+          order: "role.asc",
+        });
+
+        // 3) steps
+        const stepRows = await sbSelect<StepItem[]>("recipe_steps", {
+          select: "step_no,content,tip",
+          recipe_id: `eq.${recipe.id}`,
+          order: "step_no.asc",
+        });
+
+        if (controller.signal.aborted) return;
+
+        const ingredientItems: IngredientItem[] =
+          riRows?.map((item) => {
+            const ing = Array.isArray(item.ingredients)
+              ? item.ingredients[0]
+              : item.ingredients;
+
+            return {
+              key: ing?.key ?? null,
+              display_name: ing?.display_name ?? null,
+              role: item.role ?? null,
+              amount: item.amount ?? null,
+              unit: item.unit ?? null,
+              note: item.note ?? null,
+            };
+          }) ?? [];
+
+        const json: RecipeResponse = {
+          recipe,
+          ingredients: ingredientItems,
+          steps: stepRows ?? [],
+        };
+
         setData(json);
+
         const initialChecked = new Set(
-          json.ingredients
+          ingredientItems
             .map((ing) => ing.key)
             .filter((key): key is string => Boolean(key)),
         );
         setChecked(initialChecked);
       } catch (err) {
-        if (ignore) return;
+        if (controller.signal.aborted) return;
         const message =
           err instanceof Error ? err.message : "Không tải được công thức";
         setError(message);
       } finally {
-        if (!ignore) {
-          setLoading(false);
-        }
+        if (!controller.signal.aborted) setLoading(false);
       }
     };
+
     fetchRecipe();
+
     return () => {
-      ignore = true;
+      controller.abort();
     };
   }, [slug]);
 
@@ -126,14 +191,19 @@ export default function RecipeDetailPage() {
   const handleCopy = async () => {
     if (!data) return;
     const lines = data.ingredients.map((item) => {
-      const amount = item.amount ? `${item.amount}${item.unit ? ` ${item.unit}` : ""}` : "";
+      const amount = item.amount
+        ? `${item.amount}${item.unit ? ` ${item.unit}` : ""}`
+        : "";
       const note = item.note ? ` (${item.note})` : "";
-      return `- ${item.display_name ?? "Nguyên liệu"}${amount ? `: ${amount}` : ""}${note}`;
+      return `- ${item.display_name ?? "Nguyên liệu"}${
+        amount ? `: ${amount}` : ""
+      }${note}`;
     });
-    const text = [`${data.recipe.name} - danh sách nguyên liệu`, ...lines].join("\n");
+    const text = [`${data.recipe.name} - danh sách nguyên liệu`, ...lines].join(
+      "\n",
+    );
     try {
       await navigator.clipboard.writeText(text);
-      // optionally we could show toast; keep silent for minimal change
     } catch (err) {
       console.error("Copy failed", err);
     }
@@ -155,9 +225,7 @@ export default function RecipeDetailPage() {
     );
   }
 
-  if (!data) {
-    return null;
-  }
+  if (!data) return null;
 
   return (
     <div className="min-h-screen bg-white">
@@ -171,16 +239,12 @@ export default function RecipeDetailPage() {
         </button>
 
         <header className="flex flex-col gap-2">
-          <h1 className="text-2xl font-bold text-slate-900">
-            {data.recipe.name}
-          </h1>
+          <h1 className="text-2xl font-bold text-slate-900">{data.recipe.name}</h1>
           <div className="flex flex-wrap items-center gap-3 text-sm text-slate-600">
             {data.recipe.cook_time_minutes ? (
               <span>Thời gian: {data.recipe.cook_time_minutes} phút</span>
             ) : null}
-            {data.recipe.difficulty ? (
-              <span>Độ khó: {data.recipe.difficulty}</span>
-            ) : null}
+            {data.recipe.difficulty ? <span>Độ khó: {data.recipe.difficulty}</span> : null}
           </div>
           {data.recipe.short_note ? (
             <p className="text-sm text-slate-700">{data.recipe.short_note}</p>
@@ -198,19 +262,34 @@ export default function RecipeDetailPage() {
               Copy danh sách mua sắm
             </button>
           </div>
+
           <ul className="flex flex-col gap-3">
-            {sortedIngredients.map((item) => (
+            {(sortedIngredients ?? []).map((item) => (
               <li
                 key={item.key ?? `${item.display_name}-${item.role}`}
                 className="flex items-start justify-between gap-3 rounded-md border border-slate-200 p-3"
               >
                 <div className="flex items-start gap-3">
+                  <label
+                    className="sr-only"
+                    htmlFor={`ingredient-checkbox-${item.key ?? item.display_name}`}
+                  >
+                    {item.display_name ?? "Nguyên liệu"}
+                  </label>
+
                   <input
+                    id={`ingredient-checkbox-${item.key ?? item.display_name}`}
                     type="checkbox"
+                    disabled={!item.key}
                     checked={item.key ? checked.has(item.key) : false}
-                    onChange={() => toggleChecked(item.key)}
-                    className="mt-1 h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                    onChange={() => {
+                      if (!item.key) return;
+                      toggleChecked(item.key);
+                    }}
+                    className="mt-1 h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 disabled:opacity-40"
+                    title={item.display_name ?? "Nguyên liệu"}
                   />
+
                   <div className="flex flex-col">
                     <span className="text-sm font-semibold text-slate-900">
                       {item.display_name ?? "Nguyên liệu"}
@@ -218,6 +297,7 @@ export default function RecipeDetailPage() {
                     <span className="text-xs text-slate-600">
                       {item.role === "core" ? "Core" : "Tùy chọn"}
                     </span>
+
                     {item.amount ? (
                       <span className="text-sm text-slate-700">
                         {item.amount}
@@ -225,9 +305,7 @@ export default function RecipeDetailPage() {
                         {item.note ? ` (${item.note})` : ""}
                       </span>
                     ) : item.note ? (
-                      <span className="text-sm text-slate-700">
-                        {item.note}
-                      </span>
+                      <span className="text-sm text-slate-700">{item.note}</span>
                     ) : null}
                   </div>
                 </div>
@@ -239,7 +317,7 @@ export default function RecipeDetailPage() {
         <section className="flex flex-col gap-3">
           <h2 className="text-lg font-semibold text-slate-900">Các bước</h2>
           <ol className="flex flex-col gap-3">
-            {data.steps.map((step) => (
+            {(data.steps ?? []).map((step) => (
               <li
                 key={step.step_no}
                 className="rounded-md border border-slate-200 p-3"
