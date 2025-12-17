@@ -1,4 +1,5 @@
 "use client";
+
 import { RecipeCardsSkeleton } from "@/components/Skeletons";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -77,9 +78,7 @@ export default function RecommendationsClient() {
         if (controller.signal.aborted) return;
 
         const message =
-          err instanceof Error
-            ? err.message
-            : "Không tải được gợi ý món ăn";
+          err instanceof Error ? err.message : "Không tải được gợi ý món ăn";
         setError(message);
         setItems([]);
       } finally {
@@ -133,6 +132,16 @@ export default function RecommendationsClient() {
     </div>
   ) : null;
 
+  // ✅ “Mở là biết nấu gì”
+  const cookNow = useMemo(
+    () => items.filter((i) => i.core_missing === 0),
+    [items],
+  );
+  const cookLater = useMemo(
+    () => items.filter((i) => typeof i.core_missing === "number" && i.core_missing > 0),
+    [items],
+  );
+
   return (
     <div className="min-h-screen bg-white">
       <main className="mx-auto flex max-w-3xl flex-col gap-4 px-4 py-6">
@@ -150,9 +159,7 @@ export default function RecommendationsClient() {
             <button
               type="button"
               onClick={() =>
-                router.push(
-                  `/?${buildQueryParams({ keys: keys.join(","), tag })}`,
-                )
+                router.push(`/?${buildQueryParams({ keys: keys.join(","), tag })}`)
               }
               className="rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold text-slate-700 hover:border-emerald-400"
             >
@@ -198,19 +205,64 @@ export default function RecommendationsClient() {
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {items.map((item) => (
-              <RecipeCard
-                key={item.slug}
-                name={item.name}
-                slug={item.slug}
-                category={item.category}
-                cook_time_minutes={item.cook_time_minutes}
-                core_missing={item.core_missing}
-                missing_core_names={item.missing_core_names}
-                onClick={() => handleCardClick(item.slug)}
-              />
-            ))}
+          <div className="flex flex-col gap-6">
+            {/* 🍳 Nấu ngay */}
+            {cookNow.length > 0 ? (
+              <section className="flex flex-col gap-3">
+                <div className="flex items-end justify-between">
+                  <h2 className="text-base font-semibold text-emerald-700">
+                    🍳 Nấu ngay
+                  </h2>
+                  <span className="text-xs text-slate-500">
+                    {cookNow.length} món
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  {cookNow.map((item) => (
+                    <RecipeCard
+                      key={item.slug}
+                      name={item.name}
+                      slug={item.slug}
+                      category={item.category}
+                      cook_time_minutes={item.cook_time_minutes}
+                      core_missing={item.core_missing}
+                      missing_core_names={item.missing_core_names}
+                      onClick={() => handleCardClick(item.slug)}
+                    />
+                  ))}
+                </div>
+              </section>
+            ) : null}
+
+            {/* 🛒 Có thể nấu */}
+            {cookLater.length > 0 ? (
+              <section className="flex flex-col gap-3">
+                <div className="flex items-end justify-between">
+                  <h2 className="text-base font-semibold text-slate-800">
+                    🛒 Có thể nấu (thiếu ít)
+                  </h2>
+                  <span className="text-xs text-slate-500">
+                    {cookLater.length} món
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  {cookLater.map((item) => (
+                    <RecipeCard
+                      key={item.slug}
+                      name={item.name}
+                      slug={item.slug}
+                      category={item.category}
+                      cook_time_minutes={item.cook_time_minutes}
+                      core_missing={item.core_missing}
+                      missing_core_names={item.missing_core_names}
+                      onClick={() => handleCardClick(item.slug)}
+                    />
+                  ))}
+                </div>
+              </section>
+            ) : null}
           </div>
         )}
       </main>
