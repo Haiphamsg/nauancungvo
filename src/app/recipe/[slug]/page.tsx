@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { sbSelect } from "@/lib/supabaseRest";
+import Image from "next/image";
+import { getRecipeImageSrc } from "@/lib/images";
 
 type RecipeRow = {
   id: string; // uuid
@@ -45,6 +47,7 @@ export default function RecipeDetailPage() {
   const [data, setData] = useState<RecipeResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [heroSrc, setHeroSrc] = useState<string | null>(null);
 
   // ✅ ownedKeysSet: nguyên liệu user đang có (từ URL / sessionStorage)
   const [ownedKeysSet, setOwnedKeysSet] = useState<Set<string>>(new Set());
@@ -125,6 +128,8 @@ export default function RecipeDetailPage() {
           setData(null);
           return;
         }
+        const { bySlug, fallback } = getRecipeImageSrc(recipe.slug, recipe.category);
+        setHeroSrc(bySlug);
 
         // 2) ingredients with join
         const riRows = await sbSelect<any[]>("recipe_ingredients", {
@@ -277,6 +282,25 @@ export default function RecipeDetailPage() {
         >
           ← Quay lại gợi ý
         </button>
+
+        {data?.recipe ? (
+          <div className="relative overflow-hidden rounded-xl border border-slate-200 bg-slate-100">
+            <div className="relative aspect-[16/9] w-full">
+              <Image
+                src={heroSrc ?? getRecipeImageSrc(data.recipe.slug, data.recipe.category).bySlug}
+                alt={data.recipe.name}
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 100vw, 768px"
+                onError={() => {
+                  const { fallback } = getRecipeImageSrc(data.recipe.slug, data.recipe.category);
+                  setHeroSrc(fallback);
+                }}
+              />
+            </div>
+          </div>
+        ) : null}
+
 
         <header className="flex flex-col gap-2">
           <h1 className="text-2xl font-bold text-slate-900">{data.recipe.name}</h1>
