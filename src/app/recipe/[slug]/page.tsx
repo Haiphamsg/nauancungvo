@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { sbSelect } from "@/lib/supabaseRest";
 import Image from "next/image";
@@ -25,6 +25,17 @@ type IngredientItem = {
   amount: number | null;
   unit: string | null;
   note: string | null;
+};
+
+type RecipeIngredientJoinRow = {
+  role: string | null;
+  amount: number | null;
+  unit: string | null;
+  note: string | null;
+  ingredients:
+    | { key: string | null; display_name: string | null }
+    | { key: string | null; display_name: string | null }[]
+    | null;
 };
 
 type StepItem = {
@@ -128,11 +139,11 @@ export default function RecipeDetailPage() {
           setData(null);
           return;
         }
-        const { bySlug, fallback } = getRecipeImageSrc(recipe.slug, recipe.category);
-        setHeroSrc(bySlug);
+        const { bySlug } = getRecipeImageSrc(recipe.slug, recipe.category);
+        setHeroSrc(recipe.image_url?.trim() || bySlug);
 
         // 2) ingredients with join
-        const riRows = await sbSelect<any[]>("recipe_ingredients", {
+        const riRows = await sbSelect<RecipeIngredientJoinRow[]>("recipe_ingredients", {
           select: "role,amount,unit,note,ingredients(key,display_name)",
           recipe_id: `eq.${recipe.id}`,
           order: "role.asc",
@@ -272,6 +283,11 @@ export default function RecipeDetailPage() {
 
   if (!data) return null;
 
+  const defaultHero = getRecipeImageSrc(data.recipe.slug, data.recipe.category);
+  const finalHeroSrc =
+    heroSrc ?? data.recipe.image_url?.trim() ?? defaultHero.bySlug;
+  const isRemoteHero = /^https?:\/\//i.test(finalHeroSrc);
+
   return (
     <div className="min-h-screen bg-white">
       <main className="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-6">
@@ -286,17 +302,26 @@ export default function RecipeDetailPage() {
         {data?.recipe ? (
           <div className="relative overflow-hidden rounded-xl border border-slate-200 bg-slate-100">
             <div className="relative aspect-[16/9] w-full">
-              <Image
-                src={heroSrc ?? getRecipeImageSrc(data.recipe.slug, data.recipe.category).bySlug}
-                alt={data.recipe.name}
-                fill
-                className="object-cover"
-                sizes="(max-width: 768px) 100vw, 768px"
-                onError={() => {
-                  const { fallback } = getRecipeImageSrc(data.recipe.slug, data.recipe.category);
-                  setHeroSrc(fallback);
-                }}
-              />
+              {isRemoteHero ? (
+                // Dùng <img> để chấp nhận mọi domain (Next/Image cần allowlist domains).
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={finalHeroSrc}
+                  alt={data.recipe.name}
+                  className="h-full w-full object-cover"
+                  loading="eager"
+                  onError={() => setHeroSrc(defaultHero.bySlug)}
+                />
+              ) : (
+                <Image
+                  src={finalHeroSrc}
+                  alt={data.recipe.name}
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 100vw, 768px"
+                  onError={() => setHeroSrc(defaultHero.fallback)}
+                />
+              )}
             </div>
           </div>
         ) : null}
