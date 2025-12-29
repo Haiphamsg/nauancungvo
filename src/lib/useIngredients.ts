@@ -15,7 +15,7 @@ type CacheShape = {
   savedAt: number; // epoch ms
   items: Ingredient[];
 };
-
+// Thời gian lưu cache và cơ chế
 const CACHE_KEY = "ncv.ingredients.cache.v1";
 const CACHE_VERSION = 1;
 const TTL_MS = 24 * 60 * 60 * 1000; // 24h
