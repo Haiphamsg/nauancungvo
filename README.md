@@ -61,3 +61,5 @@ Supabase-backed Next.js app for the Vietnamese family cooking MVP.
 
 ## Smoke test
 - Run API smoke checks locally (requires dev server running): `npm run smoke`
+
+# Run deploy.sh

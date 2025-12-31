@@ -4,9 +4,13 @@ import { useEffect, useMemo, useState } from "react";
 import { sbSelect } from "@/lib/supabaseRest";
 
 export type Ingredient = {
+  id?: string;
   key: string;
   display_name: string;
   group?: string | null;
+  group_final?: string | null;
+  is_core_default?: boolean | null;
+  is_core_final?: boolean | null;
   // thêm field khác nếu bạn có
 };
 
@@ -17,7 +21,7 @@ type CacheShape = {
 };
 // Thời gian lưu cache và cơ chế
 const CACHE_KEY = "ncv.ingredients.cache.v1";
-const CACHE_VERSION = 1;
+const CACHE_VERSION = 2;
 const TTL_MS = 24 * 60 * 60 * 1000; // 24h
 
 function readCache(): CacheShape | null {
@@ -48,8 +52,8 @@ function writeCache(items: Ingredient[]) {
 
 async function fetchIngredientsFromSupabase(): Promise<Ingredient[]> {
   // NOTE: sửa select/order theo schema thật của bạn
-  const rows = await sbSelect<Ingredient[]>("ingredients", {
-    select: "key,display_name,group,is_core_default",
+  const rows = await sbSelect<Ingredient[]>("v_ingredients_final", {
+    select: "id,key,display_name,group_final,is_core_final,search_text,key_norm,created_at,updated_at",
   });
   return rows ?? [];
 }

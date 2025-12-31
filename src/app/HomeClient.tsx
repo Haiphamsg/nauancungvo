@@ -35,11 +35,13 @@ const groupLabels: Record<IngredientItem["group"], string> = {
 function normalizeIngredient(raw: CachedIngredient): IngredientItem {
   // Hook có thể trả group/sort_order optional; HomeClient cần group + is_core_default
   // Nếu DB chưa có is_core_default, mặc định false để không crash.
+  const group = (raw.group_final ?? raw.group) as IngredientItem["group"] | null | undefined;
+  const isCore = (raw.is_core_final ?? raw.is_core_default) as boolean | null | undefined;
   return {
     key: raw.key,
     display_name: raw.display_name,
-    group: (raw.group as IngredientItem["group"]) ?? "other",
-    is_core_default: (raw as any).is_core_default ?? false,
+    group: group ?? "other",
+    is_core_default: isCore ?? false,
   };
 }
 

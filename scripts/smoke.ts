@@ -24,10 +24,27 @@ async function checkRecommend() {
   console.log("Recommend:", json);
 }
 
+async function checkIngredients() {
+  const res = await fetch(`${baseUrl}/api/ingredients`);
+  if (!res.ok) throw new Error(`/api/ingredients failed: ${res.status}`);
+  const json = await res.json();
+  const first = json?.items?.[0];
+  if (first) {
+    if (typeof first.key !== "string") throw new Error("ingredients.item.key missing");
+    if (typeof first.display_name !== "string")
+      throw new Error("ingredients.item.display_name missing");
+    if (typeof first.group !== "string") throw new Error("ingredients.item.group missing");
+    if (typeof first.is_core_default !== "boolean")
+      throw new Error("ingredients.item.is_core_default missing");
+  }
+  console.log("Ingredients:", { count: json?.items?.length ?? 0, sample: first ?? null });
+}
+
 async function main() {
   try {
     await checkHealth();
     await checkRecommend();
+    await checkIngredients();
     console.log("Smoke tests completed");
   } catch (err) {
     console.error("Smoke test failed:", err);

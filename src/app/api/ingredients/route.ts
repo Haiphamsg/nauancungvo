@@ -15,8 +15,8 @@ type IngredientRow = {
   id: string; // ✅ uuid
   key: string;
   display_name: string;
-  group: IngredientGroup;
-  is_core_default: boolean;
+  group_final: IngredientGroup;
+  is_core_final: boolean;
   search_text: string | null;
 };
 
@@ -42,13 +42,12 @@ export async function GET(request: NextRequest) {
     // 1) No search -> list
     if (!qRaw) {
       let query = supabase
-        .from("ingredients")
-        // ✅ quote "group" to be safe
-        .select('id, key, display_name, "group", is_core_default')
-        .order("group")
+        .from("v_ingredients_final")
+        .select("id, key, display_name, group_final, is_core_final")
+        .order("group_final")
         .order("display_name");
 
-      if (group) query = query.eq("group", group);
+      if (group) query = query.eq("group_final", group);
 
       const { data, error } = await query;
       if (error) throw error;
@@ -56,8 +55,8 @@ export async function GET(request: NextRequest) {
       const items: IngredientListItem[] = (data as IngredientRow[]).map((x) => ({
         key: x.key,
         display_name: x.display_name,
-        group: x.group,
-        is_core_default: x.is_core_default,
+        group: x.group_final,
+        is_core_default: x.is_core_final,
       }));
 
       return NextResponse.json({ items });
@@ -70,8 +69,8 @@ export async function GET(request: NextRequest) {
 
     // 2) Query A: search directly on ingredients (normalized + fallback)
     let qIngredients = supabase
-      .from("ingredients")
-      .select('id, key, display_name, "group", is_core_default')
+      .from("v_ingredients_final")
+      .select("id, key, display_name, group_final, is_core_final, search_text")
       .or(
         [
           `search_text.ilike.${normPattern}`,
@@ -79,7 +78,7 @@ export async function GET(request: NextRequest) {
         ].join(","),
       );
 
-    if (group) qIngredients = qIngredients.eq("group", group);
+    if (group) qIngredients = qIngredients.eq("group_final", group);
 
     const { data: aData, error: aErr } = await qIngredients;
     if (aErr) throw aErr;
@@ -101,11 +100,11 @@ export async function GET(request: NextRequest) {
     let bData: IngredientRow[] = [];
     if (aliasIds.length > 0) {
       let qByAlias = supabase
-        .from("ingredients")
-        .select('id, key, display_name, "group", is_core_default')
+        .from("v_ingredients_final")
+        .select("id, key, display_name, group_final, is_core_final")
         .in("id", aliasIds);
 
-      if (group) qByAlias = qByAlias.eq("group", group);
+      if (group) qByAlias = qByAlias.eq("group_final", group);
 
       const { data, error } = await qByAlias;
       if (error) throw error;
@@ -118,8 +117,8 @@ export async function GET(request: NextRequest) {
       dedup.set(x.id, {
         key: x.key,
         display_name: x.display_name,
-        group: x.group,
-        is_core_default: x.is_core_default,
+        group: x.group_final,
+        is_core_default: x.is_core_final,
       });
     }
 
