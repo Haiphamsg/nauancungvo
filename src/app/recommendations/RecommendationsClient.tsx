@@ -15,6 +15,7 @@ type RecommendationItem = {
   slug: string;
   category?: string | null;
   tag?: "weekday" | "weekend" | string | null;
+  image_url?: string | null;
   cook_time_minutes?: number | null;
   core_missing?: number | null;
   missing_core_names?: string[] | null;
@@ -225,6 +226,7 @@ export default function RecommendationsClient() {
                       name={item.name}
                       slug={item.slug}
                       category={item.category}
+                      imageUrl={item.image_url}
                       cook_time_minutes={item.cook_time_minutes}
                       core_missing={item.core_missing}
                       missing_core_names={item.missing_core_names}
@@ -254,6 +256,7 @@ export default function RecommendationsClient() {
                       name={item.name}
                       slug={item.slug}
                       category={item.category}
+                      imageUrl={item.image_url}
                       cook_time_minutes={item.cook_time_minutes}
                       core_missing={item.core_missing}
                       missing_core_names={item.missing_core_names}

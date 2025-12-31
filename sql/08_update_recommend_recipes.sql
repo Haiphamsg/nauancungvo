@@ -13,6 +13,7 @@ RETURNS TABLE (
   slug text,
   tag recipe_tag,
   category text,
+  image_url text,
   cook_time_minutes int,
   core_missing int,
   missing_core_names text[],
@@ -31,6 +32,7 @@ RETURNS TABLE (
       r.slug,
       r.tag,
       r.category,
+      r.image_url,
       r.cook_time_minutes,
       -- "Core" for recommendation = required ingredients for the recipe,
       -- excluding pantry defaults (e.g. salt/fish sauce) that the product auto-selects.
@@ -46,7 +48,7 @@ RETURNS TABLE (
     JOIN recipe_ingredients ri ON ri.recipe_id = r.id
     JOIN ingredients i ON i.id = ri.ingredient_id
     WHERE r.is_active IS DISTINCT FROM FALSE
-    GROUP BY r.id, r.name, r.slug, r.tag, r.category, r.cook_time_minutes
+    GROUP BY r.id, r.name, r.slug, r.tag, r.category, r.image_url, r.cook_time_minutes
   ),
   scored AS (
     SELECT
@@ -76,6 +78,7 @@ RETURNS TABLE (
     slug,
     tag,
     category,
+    image_url,
     cook_time_minutes,
     missing_count AS core_missing,
     COALESCE(missing_names, ARRAY[]::text[]) AS missing_core_names,

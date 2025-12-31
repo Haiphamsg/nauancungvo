@@ -8,6 +8,7 @@ type Props = {
   name: string;
   slug: string;
   category?: RecipeCategory | null;
+  imageUrl?: string | null;
   cook_time_minutes?: number | null;
   core_missing?: number | null;
   missing_core_names?: string[] | null;
@@ -18,6 +19,7 @@ export function RecipeCard({
   name,
   slug,
   category,
+  imageUrl,
   cook_time_minutes,
   core_missing,
   missing_core_names,
@@ -28,10 +30,18 @@ export function RecipeCard({
     [slug, category],
   );
 
-  const [imgSrc, setImgSrc] = useState(bySlug);
+  const preferredSrc = useMemo(() => {
+    const trimmed = imageUrl?.trim();
+    return trimmed ? trimmed : bySlug;
+  }, [imageUrl, bySlug]);
 
-  // ✅ Khi slug/category đổi, reset ảnh về bySlug
-  useEffect(() => setImgSrc(bySlug), [bySlug]);
+  const [imgSrc, setImgSrc] = useState(preferredSrc);
+
+  // Reset ảnh khi slug/category/imageUrl đổi (để fallback không “dính” qua recipe khác)
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => setImgSrc(preferredSrc), [preferredSrc]);
+
+  const isRemoteHero = /^https?:\/\//i.test(imgSrc);
 
   const badge = (() => {
     if (core_missing === 0) {
@@ -57,18 +67,32 @@ export function RecipeCard({
       onClick={onClick}
       className="group flex w-full flex-col overflow-hidden rounded-xl border border-slate-200 bg-white text-left shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-300 hover:shadow-md"
     >
-      <div className="relative aspect-[16/9] w-full bg-slate-100">
-        <Image
-          src={imgSrc}
-          alt={name}
-          fill
-          className="object-cover transition duration-300 group-hover:scale-[1.02]"
-          sizes="(max-width: 640px) 100vw, 50vw"
-          onError={() => {
-            if (imgSrc !== fallback) setImgSrc(fallback);
-          }}
-        />
-        <div className="absolute left-3 top-3">{badge}</div>
+      <div className="relative overflow-hidden bg-slate-100">
+        <div className="relative aspect-[16/9] w-full">
+          {isRemoteHero ? (
+            // Dùng <img> để chấp nhận mọi domain (Next/Image cần allowlist domains).
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={imgSrc}
+              alt={name}
+              className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]"
+              loading="lazy"
+              onError={() => setImgSrc(bySlug)}
+            />
+          ) : (
+            <Image
+              src={imgSrc}
+              alt={name}
+              fill
+              className="object-cover transition duration-300 group-hover:scale-[1.02]"
+              sizes="(max-width: 640px) 100vw, 50vw"
+              onError={() => {
+                if (imgSrc !== fallback) setImgSrc(fallback);
+              }}
+            />
+          )}
+          <div className="absolute left-3 top-3">{badge}</div>
+        </div>
       </div>
 
       <div className="flex flex-col gap-2 p-4">
