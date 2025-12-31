@@ -8,7 +8,7 @@ CREATE OR REPLACE FUNCTION recommend_recipes(
   limit_n int
 )
 RETURNS TABLE (
-  id int,
+  id uuid,
   name text,
   slug text,
   tag recipe_tag,
@@ -32,8 +32,16 @@ RETURNS TABLE (
       r.tag,
       r.category,
       r.cook_time_minutes,
-      array_remove(array_agg(i.key) FILTER (WHERE ri.role = 'core'), NULL) AS core_keys,
-      array_remove(array_agg(i.display_name) FILTER (WHERE ri.role = 'core'), NULL) AS core_names
+      -- "Core" for recommendation = required ingredients for the recipe,
+      -- excluding pantry defaults (e.g. salt/fish sauce) that the product auto-selects.
+      array_remove(
+        array_agg(i.key) FILTER (WHERE ri.role = 'core' AND COALESCE(i.is_core_default, FALSE) = FALSE),
+        NULL
+      ) AS core_keys,
+      array_remove(
+        array_agg(i.display_name) FILTER (WHERE ri.role = 'core' AND COALESCE(i.is_core_default, FALSE) = FALSE),
+        NULL
+      ) AS core_names
     FROM recipes r
     JOIN recipe_ingredients ri ON ri.recipe_id = r.id
     JOIN ingredients i ON i.id = ri.ingredient_id

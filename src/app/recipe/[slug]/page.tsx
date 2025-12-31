@@ -25,6 +25,7 @@ type IngredientItem = {
   amount: number | null;
   unit: string | null;
   note: string | null;
+  is_pantry_default: boolean;
 };
 
 type RecipeIngredientJoinRow = {
@@ -33,8 +34,8 @@ type RecipeIngredientJoinRow = {
   unit: string | null;
   note: string | null;
   ingredients:
-    | { key: string | null; display_name: string | null }
-    | { key: string | null; display_name: string | null }[]
+    | { key: string | null; display_name: string | null; is_core_default?: boolean | null }
+    | { key: string | null; display_name: string | null; is_core_default?: boolean | null }[]
     | null;
 };
 
@@ -144,7 +145,7 @@ export default function RecipeDetailPage() {
 
         // 2) ingredients with join
         const riRows = await sbSelect<RecipeIngredientJoinRow[]>("recipe_ingredients", {
-          select: "role,amount,unit,note,ingredients(key,display_name)",
+          select: "role,amount,unit,note,ingredients(key,display_name,is_core_default)",
           recipe_id: `eq.${recipe.id}`,
           order: "role.asc",
         });
@@ -171,6 +172,7 @@ export default function RecipeDetailPage() {
               amount: item.amount ?? null,
               unit: item.unit ?? null,
               note: item.note ?? null,
+              is_pantry_default: Boolean(ing?.is_core_default),
             };
           }) ?? [];
 
@@ -214,8 +216,12 @@ export default function RecipeDetailPage() {
     if (!data) return [];
     const copy = [...data.ingredients];
     return copy.sort((a, b) => {
-      const rank = (role: string | null) => (role === "core" ? 0 : 1);
-      const diff = rank(a.role) - rank(b.role);
+      const rank = (item: IngredientItem) => {
+        if (item.role === "core" && !item.is_pantry_default) return 0;
+        if (item.is_pantry_default) return 1;
+        return 2;
+      };
+      const diff = rank(a) - rank(b);
       if (diff !== 0) return diff;
       return (a.display_name ?? "").localeCompare(b.display_name ?? "");
     });
@@ -228,7 +234,7 @@ export default function RecipeDetailPage() {
     const have = list.filter((i) => i.key && ownedKeysSet.has(i.key)).length;
     const miss = list.filter((i) => i.key && !ownedKeysSet.has(i.key)).length;
 
-    const coreList = list.filter((i) => i.role === "core");
+    const coreList = list.filter((i) => i.role === "core" && !i.is_pantry_default);
     const coreHave = coreList.filter((i) => i.key && ownedKeysSet.has(i.key)).length;
     const coreMiss = coreList.filter((i) => i.key && !ownedKeysSet.has(i.key)).length;
 
@@ -435,7 +441,11 @@ export default function RecipeDetailPage() {
                         </span>
 
                         <span className="text-xs text-slate-600">
-                          {item.role === "core" ? "Core" : "Tùy chọn"}
+                          {item.role === "core" && !item.is_pantry_default
+                            ? "Bắt buộc"
+                            : item.is_pantry_default
+                              ? "Gia vị mặc định"
+                              : "Tùy chọn"}
                         </span>
                       </div>
 

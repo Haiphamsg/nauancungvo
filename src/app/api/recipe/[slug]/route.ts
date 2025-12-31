@@ -56,7 +56,8 @@ export async function GET(_request: NextRequest, ctx: RouteContext) {
           note,
           ingredients:ingredients(
             key,
-            display_name
+            display_name,
+            is_core_default
           )
         `,
       )
@@ -81,6 +82,7 @@ export async function GET(_request: NextRequest, ctx: RouteContext) {
         return {
           key: ing?.key ?? null,
           display_name: ing?.display_name ?? null,
+          is_pantry_default: Boolean(ing?.is_core_default),
           role: item.role ?? null,
           amount: item.amount ?? null,
           unit: item.unit ?? null,
