@@ -7,11 +7,10 @@ export type Ingredient = {
   id?: string;
   key: string;
   display_name: string;
-  group?: string | null;
-  group_final?: string | null;
-  is_core_default?: boolean | null;
-  is_core_final?: boolean | null;
-  // thêm field khác nếu bạn có
+  group?: string | null;            // OLD: group_final (from view)
+  is_core_default?: boolean | null; // OLD: is_core_final (from view)
+  search_text?: string | null;
+  key_norm?: string | null;
 };
 
 type CacheShape = {
@@ -51,9 +50,11 @@ function writeCache(items: Ingredient[]) {
 }
 
 async function fetchIngredientsFromSupabase(): Promise<Ingredient[]> {
-  // NOTE: sửa select/order theo schema thật của bạn
-  const rows = await sbSelect<Ingredient[]>("v_ingredients_final", {
-    select: "id,key,display_name,group_final,is_core_final,search_text,key_norm,created_at,updated_at",
+  // OLD: v_ingredients_final (view), group_final, is_core_final
+  // NEW: ingredients (table), group, is_core_default
+  const rows = await sbSelect<Ingredient[]>("ingredients", {
+    select: "id,key,display_name,group,is_core_default,search_text,key_norm",
+    order: "display_name.asc",  // sort alphabetically
   });
   return rows ?? [];
 }

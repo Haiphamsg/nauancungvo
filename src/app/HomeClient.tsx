@@ -14,12 +14,12 @@ type IngredientItem = {
   key: string;
   display_name: string;
   group:
-    | "protein"
-    | "vegetable"
-    | "carb"
-    | "spice_core"
-    | "spice_optional"
-    | "other";
+  | "protein"
+  | "vegetable"
+  | "carb"
+  | "spice_core"
+  | "spice_optional"
+  | "other";
   is_core_default: boolean;
 };
 
@@ -33,15 +33,13 @@ const groupLabels: Record<IngredientItem["group"], string> = {
 };
 
 function normalizeIngredient(raw: CachedIngredient): IngredientItem {
-  // Hook có thể trả group/sort_order optional; HomeClient cần group + is_core_default
-  // Nếu DB chưa có is_core_default, mặc định false để không crash.
-  const group = (raw.group_final ?? raw.group) as IngredientItem["group"] | null | undefined;
-  const isCore = (raw.is_core_final ?? raw.is_core_default) as boolean | null | undefined;
+  // OLD: cần fallback từ group_final, is_core_final (view)
+  // NEW: dùng trực tiếp group, is_core_default (table)
   return {
     key: raw.key,
     display_name: raw.display_name,
-    group: group ?? "other",
-    is_core_default: isCore ?? false,
+    group: (raw.group as IngredientItem["group"]) ?? "other",
+    is_core_default: raw.is_core_default ?? false,
   };
 }
 
@@ -225,7 +223,7 @@ export default function HomeClient() {
             <ChipsSkeleton count={12} />
           ) : error ? (
             <div className="col-span-full">
-            <ErrorBox err={toUiError(new Error(error))} />
+              <ErrorBox err={toUiError(new Error(error))} />
             </div>
           ) : visibleIngredients.length === 0 ? (
             <div className="col-span-full rounded-md border border-dashed border-slate-200 p-4 text-center text-sm text-slate-600">

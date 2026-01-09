@@ -51,13 +51,23 @@ export async function POST(request: NextRequest) {
   );
   const missingCore =
     typeof body.missing_core_allow === "number" &&
-    !Number.isNaN(body.missing_core_allow)
+      !Number.isNaN(body.missing_core_allow)
       ? Math.floor(body.missing_core_allow)
       : 2;
 
   const supabase = createSupabaseServer();
 
   try {
+    // Function `recommend_recipes` đã được UPDATE trong file:
+    // sql/09_recommend_recipes_new_schema.sql
+    //
+    // Return columns MỚI:
+    // - recipe_id (bigint) thay vì id (uuid)
+    // - hero_image thay vì image_url  
+    // - description (mới)
+    // - BỎ: category, cook_time_minutes
+    //
+    // Signature giữ nguyên: (selected_keys, missing_core_allow, prefer_tag, limit_n)
     const { data, error } = await supabase.rpc("recommend_recipes", {
       selected_keys: selectedKeys,
       missing_core_allow: missingCore,
