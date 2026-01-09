@@ -1,10 +1,26 @@
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+// Validate env vars at runtime
+function getSupabaseUrl(): string {
+  if (!SUPABASE_URL) {
+    throw new Error("Missing NEXT_PUBLIC_SUPABASE_URL environment variable");
+  }
+  return SUPABASE_URL;
+}
+
+function getAnonKey(): string {
+  if (!ANON) {
+    throw new Error("Missing NEXT_PUBLIC_SUPABASE_ANON_KEY environment variable");
+  }
+  return ANON;
+}
 
 function headers() {
+  const anonKey = getAnonKey();
   return {
-    apikey: ANON,
-    Authorization: `Bearer ${ANON}`,
+    apikey: anonKey,
+    Authorization: `Bearer ${anonKey}`,
     "Content-Type": "application/json",
   };
 }
@@ -19,7 +35,8 @@ export async function sbSelect<T>(
     qs.set(k, String(v));
   }
 
-  const url = `${SUPABASE_URL}/rest/v1/${path}${qs.toString() ? `?${qs}` : ""}`;
+  const baseUrl = getSupabaseUrl();
+  const url = `${baseUrl}/rest/v1/${path}${qs.toString() ? `?${qs}` : ""}`;
 
   const res = await fetch(url, { headers: headers(), cache: "no-store" });
   if (!res.ok) throw new Error(`Supabase ${res.status}: ${await res.text()}`);
@@ -27,7 +44,8 @@ export async function sbSelect<T>(
 }
 
 export async function sbRpc<T>(fn: string, body: any) {
-  const url = `${SUPABASE_URL}/rest/v1/rpc/${fn}`;
+  const baseUrl = getSupabaseUrl();
+  const url = `${baseUrl}/rest/v1/rpc/${fn}`;
   const res = await fetch(url, {
     method: "POST",
     headers: headers(),
