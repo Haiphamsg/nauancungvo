@@ -8,8 +8,8 @@ import { env } from "@/lib/env";
  */
 const ALLOWED_ORIGINS = [
     // Production domain (thay bằng domain thật của bạn)
-    "https://anngoncungvo.com",
-    "https://www.anngoncungvo.com",
+    "https://anngoncungvo.fun",
+    "https://www.anngoncungvo.fun",
     // Development
     "http://localhost:3000",
     "http://127.0.0.1:3000",
