@@ -54,15 +54,31 @@ export async function GET(request: NextRequest) {
       if (group) query = query.eq("group", group);  // OLD: group_final
 
       const { data, error } = await query;
+
+      // DEBUG: Log raw response
+      console.log("[API/ingredients] Raw response:", {
+        dataLength: data?.length ?? 0,
+        error: error?.message ?? null,
+        sample: data?.slice(0, 3) ?? [],
+      });
+
       if (error) throw error;
 
-      const items: IngredientListItem[] = (data as IngredientRow[]).map((x) => ({
-        key: x.key,
-        display_name: x.display_name,
-        group: x.group,              // OLD: x.group_final
-        is_core_default: x.is_core_default,  // OLD: x.is_core_final
-      }));
+      // FIX: Normalize group to lowercase (DB có mixed case: vegetable vs Vegetable)
+      const items: IngredientListItem[] = (data as IngredientRow[]).map((x) => {
+        const rawGroup = (x.group ?? "other").toLowerCase() as IngredientGroup;
+        const validGroups: IngredientGroup[] = ["protein", "vegetable", "carb", "spice_core", "spice_optional", "other"];
+        const group = validGroups.includes(rawGroup) ? rawGroup : "other";
 
+        return {
+          key: x.key,
+          display_name: x.display_name,
+          group,
+          is_core_default: x.is_core_default ?? false,
+        };
+      });
+
+      console.log("[API/ingredients] Returning items:", items.length);
       return NextResponse.json({ items });
     }
 

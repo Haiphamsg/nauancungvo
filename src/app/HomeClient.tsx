@@ -35,10 +35,15 @@ const groupLabels: Record<IngredientItem["group"], string> = {
 function normalizeIngredient(raw: CachedIngredient): IngredientItem {
   // OLD: cần fallback từ group_final, is_core_final (view)
   // NEW: dùng trực tiếp group, is_core_default (table)
+  // FIX: DB có mixed case (vegetable vs Vegetable), cần lowercase
+  const rawGroup = (raw.group ?? "other").toLowerCase() as IngredientItem["group"];
+  const validGroups: IngredientItem["group"][] = ["protein", "vegetable", "carb", "spice_core", "spice_optional", "other"];
+  const group = validGroups.includes(rawGroup) ? rawGroup : "other";
+
   return {
     key: raw.key,
     display_name: raw.display_name,
-    group: (raw.group as IngredientItem["group"]) ?? "other",
+    group,
     is_core_default: raw.is_core_default ?? false,
   };
 }

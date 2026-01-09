@@ -52,10 +52,19 @@ function writeCache(items: Ingredient[]) {
 async function fetchIngredientsFromSupabase(): Promise<Ingredient[]> {
   // OLD: v_ingredients_final (view), group_final, is_core_final
   // NEW: ingredients (table), group, is_core_default
+  console.log("[DEBUG] Fetching ingredients from Supabase...");
+
   const rows = await sbSelect<Ingredient[]>("ingredients", {
     select: "id,key,display_name,group,is_core_default,search_text,key_norm",
     order: "display_name.asc",  // sort alphabetically
   });
+
+  // DEBUG: Log the result
+  console.log("[DEBUG] Ingredients fetched:", {
+    count: rows?.length ?? 0,
+    sample: rows?.slice(0, 3) ?? [],
+  });
+
   return rows ?? [];
 }
 
