@@ -4,30 +4,31 @@ import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { getRecipeImageSrc, type RecipeCategory } from "@/lib/images";
 
+// OLD: category, cook_time_minutes
+// NEW: removed - không có trong schema mới
 type Props = {
   name: string;
   slug: string;
-  category?: RecipeCategory | null;
   imageUrl?: string | null;
-  cook_time_minutes?: number | null;
   core_missing?: number | null;
   missing_core_names?: string[] | null;
   onClick?: () => void;
+  // REMOVED: category, cook_time_minutes
 };
 
 export function RecipeCard({
   name,
   slug,
-  category,
   imageUrl,
-  cook_time_minutes,
   core_missing,
   missing_core_names,
   onClick,
 }: Props) {
+  // OLD: getRecipeImageSrc(slug, category)
+  // NEW: no category
   const { bySlug, fallback } = useMemo(
-    () => getRecipeImageSrc(slug, category),
-    [slug, category],
+    () => getRecipeImageSrc(slug, null),
+    [slug],
   );
 
   const preferredSrc = useMemo(() => {
@@ -101,21 +102,14 @@ export function RecipeCard({
         </h3>
 
         <div className="flex items-center justify-between text-sm text-slate-600">
-          {cook_time_minutes ? (
-            <span className="inline-flex items-center gap-2">
-              <span aria-hidden>⏱</span>
-              {cook_time_minutes} phút
-            </span>
-          ) : (
-            <span />
-          )}
+          {/* OLD: displayed cook_time_minutes */}
+          {/* NEW: no longer available in schema */}
 
           {typeof core_missing === "number" && core_missing > 0 ? (
             <span className="text-xs text-slate-500">
               {missing_core_names?.length
-                ? `Thiếu: ${missing_core_names.slice(0, 2).join(", ")}${
-                    missing_core_names.length > 2 ? "…" : ""
-                  }`
+                ? `Thiếu: ${missing_core_names.slice(0, 2).join(", ")}${missing_core_names.length > 2 ? "…" : ""
+                }`
                 : null}
             </span>
           ) : null}

@@ -10,15 +10,18 @@ import { sbRpc } from "@/lib/supabaseRest";
 import { toUiError } from "@/lib/errors";
 import { ErrorBox } from "@/components/ErrorBox";
 
+// OLD: image_url, cook_time_minutes, category
+// NEW: hero_image, description - từ function recommend_recipes mới
 type RecommendationItem = {
+  recipe_id: number;  // NEW: bigint
   name: string;
   slug: string;
-  category?: string | null;
   tag?: "weekday" | "weekend" | string | null;
-  image_url?: string | null;
-  cook_time_minutes?: number | null;
+  hero_image?: string | null;  // OLD: image_url
+  description?: string | null; // NEW
   core_missing?: number | null;
   missing_core_names?: string[] | null;
+  // REMOVED: category, cook_time_minutes
 };
 
 const tagLabels: Record<string, string> = {
@@ -175,11 +178,10 @@ export default function RecommendationsClient() {
               key={value}
               type="button"
               onClick={() => handleTagChange(value)}
-              className={`rounded-full px-3 py-2 text-sm font-semibold transition ${
-                tag === value
+              className={`rounded-full px-3 py-2 text-sm font-semibold transition ${tag === value
                   ? "bg-emerald-600 text-white"
                   : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-              }`}
+                }`}
             >
               {tagLabels[value]}
             </button>
@@ -225,9 +227,7 @@ export default function RecommendationsClient() {
                       key={item.slug}
                       name={item.name}
                       slug={item.slug}
-                      category={item.category}
-                      imageUrl={item.image_url}
-                      cook_time_minutes={item.cook_time_minutes}
+                      imageUrl={item.hero_image}  // OLD: image_url
                       core_missing={item.core_missing}
                       missing_core_names={item.missing_core_names}
                       onClick={() => handleCardClick(item.slug)}
@@ -255,9 +255,7 @@ export default function RecommendationsClient() {
                       key={item.slug}
                       name={item.name}
                       slug={item.slug}
-                      category={item.category}
-                      imageUrl={item.image_url}
-                      cook_time_minutes={item.cook_time_minutes}
+                      imageUrl={item.hero_image}  // OLD: image_url
                       core_missing={item.core_missing}
                       missing_core_names={item.missing_core_names}
                       onClick={() => handleCardClick(item.slug)}

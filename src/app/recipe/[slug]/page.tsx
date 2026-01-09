@@ -6,43 +6,52 @@ import { sbSelect } from "@/lib/supabaseRest";
 import Image from "next/image";
 import { getRecipeImageSrc } from "@/lib/images";
 
+// OLD: id (uuid), category, cook_time_minutes, difficulty, image_url, short_note
+// NEW: recipe_id (bigint), hero_image, description
 type RecipeRow = {
-  id: string; // uuid
+  recipe_id: number;  // OLD: id: string (uuid)
   name: string;
   slug: string;
   tag: string | null;
-  category: string | null;
-  cook_time_minutes: number | null;
-  difficulty: string | null;
-  image_url: string | null;
-  short_note: string | null;
+  hero_image: string | null;  // OLD: image_url
+  description: string | null; // OLD: short_note
+  is_active: boolean | null;
+  // REMOVED: category, cook_time_minutes, difficulty
 };
 
+// OLD: role, amount, unit, note, ingredients(key, display_name, is_core_default)
+// NEW: ingredient_index, ingredient_text, join via ingredient_aliases
 type IngredientItem = {
+  ingredient_index: number;
+  ingredient_text: string;
   key: string | null;
   display_name: string | null;
-  role: string | null;
-  amount: number | null;
-  unit: string | null;
-  note: string | null;
-  is_pantry_default: boolean;
+  is_core_default: boolean;
+  // REMOVED: role, amount, unit, note
 };
 
+// Response from ingredient_aliases -> ingredients join
 type RecipeIngredientJoinRow = {
-  role: string | null;
-  amount: number | null;
-  unit: string | null;
-  note: string | null;
-  ingredients:
-    | { key: string | null; display_name: string | null; is_core_default?: boolean | null }
-    | { key: string | null; display_name: string | null; is_core_default?: boolean | null }[]
-    | null;
+  ingredient_index: number;
+  ingredient_text: string;
+  ingredient_aliases: {
+    ingredient_id: string;
+    alias: string;
+    ingredients: {
+      key: string;
+      display_name: string;
+      is_core_default: boolean | null;
+    } | null;
+  } | null;
 };
 
+// OLD: step_no, content, tip
+// NEW: step_index, step_text, step_image
 type StepItem = {
-  step_no: number;
-  content: string;
-  tip: string | null;
+  step_index: number;   // OLD: step_no
+  step_text: string;    // OLD: content
+  step_image: string | null;  // NEW
+  // REMOVED: tip
 };
 
 type RecipeResponse = {
@@ -68,8 +77,6 @@ export default function RecipeDetailPage() {
   const [checked, setChecked] = useState<Set<string>>(new Set());
 
   const [backHref, setBackHref] = useState("/recommendations");
-
-  // const checklistInitialized = useRef(false);
 
   // Build back link + parse keys user đang có
   useEffect(() => {
@@ -125,9 +132,10 @@ export default function RecipeDetailPage() {
         setError(null);
 
         // 1) recipe by slug
+        // OLD: id,name,slug,tag,category,cook_time_minutes,difficulty,image_url,short_note
+        // NEW: recipe_id,name,slug,tag,hero_image,description,is_active
         const recipeRows = await sbSelect<RecipeRow[]>("recipes", {
-          select:
-            "id,name,slug,tag,category,cook_time_minutes,difficulty,image_url,short_note",
+          select: "recipe_id,name,slug,tag,hero_image,description,is_active",
           slug: `eq.${slug}`,
           limit: 1,
         });
@@ -140,39 +148,44 @@ export default function RecipeDetailPage() {
           setData(null);
           return;
         }
-        const { bySlug } = getRecipeImageSrc(recipe.slug, recipe.category);
-        setHeroSrc(recipe.image_url?.trim() || bySlug);
 
-        // 2) ingredients with join
+        // OLD: getRecipeImageSrc(recipe.slug, recipe.category)
+        // NEW: no category, use slug only
+        const { bySlug } = getRecipeImageSrc(recipe.slug, null);
+        setHeroSrc(recipe.hero_image?.trim() || bySlug);
+
+        // 2) ingredients with join via ingredient_aliases
+        // OLD: role,amount,unit,note,ingredients(key,display_name,is_core_default)
+        // NEW: ingredient_index,ingredient_text,ingredient_aliases(ingredient_id,alias,ingredients(key,display_name,is_core_default))
         const riRows = await sbSelect<RecipeIngredientJoinRow[]>("recipe_ingredients", {
-          select: "role,amount,unit,note,ingredients(key,display_name,is_core_default)",
-          recipe_id: `eq.${recipe.id}`,
-          order: "role.asc",
+          select: "ingredient_index,ingredient_text,ingredient_aliases(ingredient_id,alias,ingredients(key,display_name,is_core_default))",
+          recipe_id: `eq.${recipe.recipe_id}`,  // OLD: recipe.id
+          order: "ingredient_index.asc",
         });
 
         // 3) steps
+        // OLD: step_no,content,tip
+        // NEW: step_index,step_text,step_image
         const stepRows = await sbSelect<StepItem[]>("recipe_steps", {
-          select: "step_no,content,tip",
-          recipe_id: `eq.${recipe.id}`,
-          order: "step_no.asc",
+          select: "step_index,step_text,step_image",
+          recipe_id: `eq.${recipe.recipe_id}`,  // OLD: recipe.id
+          order: "step_index.asc",
         });
 
         if (controller.signal.aborted) return;
 
+        // Transform ingredients
         const ingredientItems: IngredientItem[] =
           riRows?.map((item) => {
-            const ing = Array.isArray(item.ingredients)
-              ? item.ingredients[0]
-              : item.ingredients;
+            const alias = item.ingredient_aliases;
+            const ing = alias?.ingredients;
 
             return {
+              ingredient_index: item.ingredient_index,
+              ingredient_text: item.ingredient_text ?? "",
               key: ing?.key ?? null,
-              display_name: ing?.display_name ?? null,
-              role: item.role ?? null,
-              amount: item.amount ?? null,
-              unit: item.unit ?? null,
-              note: item.note ?? null,
-              is_pantry_default: Boolean(ing?.is_core_default),
+              display_name: ing?.display_name ?? item.ingredient_text ?? null,
+              is_core_default: Boolean(ing?.is_core_default),
             };
           }) ?? [];
 
@@ -183,18 +196,6 @@ export default function RecipeDetailPage() {
         };
 
         setData(json);
-
-        // ✅ Init checklist 1 lần:
-        // auto-check những ingredient mà user "đang có" (ownedKeysSet)
-        // để checklist hợp lý ngay từ đầu, nhưng không override sau khi user tick.
-/*         if (!checklistInitialized.current) {
-          const initial = new Set<string>();
-          for (const ing of ingredientItems) {
-            if (ing.key && ownedKeysSet.has(ing.key)) initial.add(ing.key);
-          }
-          setChecked(initial);
-          checklistInitialized.current = true;
-        } */
       } catch (err) {
         if (controller.signal.aborted) return;
         const message =
@@ -216,14 +217,8 @@ export default function RecipeDetailPage() {
     if (!data) return [];
     const copy = [...data.ingredients];
     return copy.sort((a, b) => {
-      const rank = (item: IngredientItem) => {
-        if (item.role === "core" && !item.is_pantry_default) return 0;
-        if (item.is_pantry_default) return 1;
-        return 2;
-      };
-      const diff = rank(a) - rank(b);
-      if (diff !== 0) return diff;
-      return (a.display_name ?? "").localeCompare(b.display_name ?? "");
+      // Sort by index since we don't have role anymore
+      return a.ingredient_index - b.ingredient_index;
     });
   }, [data]);
 
@@ -234,11 +229,13 @@ export default function RecipeDetailPage() {
     const have = list.filter((i) => i.key && ownedKeysSet.has(i.key)).length;
     const miss = list.filter((i) => i.key && !ownedKeysSet.has(i.key)).length;
 
-    const coreList = list.filter((i) => i.role === "core" && !i.is_pantry_default);
-    const coreHave = coreList.filter((i) => i.key && ownedKeysSet.has(i.key)).length;
-    const coreMiss = coreList.filter((i) => i.key && !ownedKeysSet.has(i.key)).length;
+    // OLD: had core/optional role
+    // NEW: no role, use is_core_default to identify "required" ingredients
+    const requiredList = list.filter((i) => !i.is_core_default);
+    const requiredHave = requiredList.filter((i) => i.key && ownedKeysSet.has(i.key)).length;
+    const requiredMiss = requiredList.filter((i) => i.key && !ownedKeysSet.has(i.key)).length;
 
-    return { have, miss, coreHave, coreMiss };
+    return { have, miss, requiredHave, requiredMiss };
   }, [sortedIngredients, ownedKeysSet]);
 
   // ✅ checkbox = checklist (không liên quan ownedKeysSet)
@@ -255,13 +252,7 @@ export default function RecipeDetailPage() {
   const handleCopy = async () => {
     if (!data) return;
     const lines = data.ingredients.map((item) => {
-      const amount = item.amount
-        ? `${item.amount}${item.unit ? ` ${item.unit}` : ""}`
-        : "";
-      const note = item.note ? ` (${item.note})` : "";
-      return `- ${item.display_name ?? "Nguyên liệu"}${
-        amount ? `: ${amount}` : ""
-      }${note}`;
+      return `- ${item.display_name ?? item.ingredient_text ?? "Nguyên liệu"}`;
     });
     const text = [`${data.recipe.name} - danh sách nguyên liệu`, ...lines].join("\n");
     try {
@@ -289,9 +280,11 @@ export default function RecipeDetailPage() {
 
   if (!data) return null;
 
-  const defaultHero = getRecipeImageSrc(data.recipe.slug, data.recipe.category);
+  // OLD: getRecipeImageSrc(data.recipe.slug, data.recipe.category)
+  // NEW: no category
+  const defaultHero = getRecipeImageSrc(data.recipe.slug, null);
   const finalHeroSrc =
-    heroSrc ?? data.recipe.image_url?.trim() ?? defaultHero.bySlug;
+    heroSrc ?? data.recipe.hero_image?.trim() ?? defaultHero.bySlug;
   const isRemoteHero = /^https?:\/\//i.test(finalHeroSrc);
 
   return (
@@ -335,16 +328,10 @@ export default function RecipeDetailPage() {
 
         <header className="flex flex-col gap-2">
           <h1 className="text-2xl font-bold text-slate-900">{data.recipe.name}</h1>
-          <div className="flex flex-wrap items-center gap-3 text-sm text-slate-600">
-            {data.recipe.cook_time_minutes ? (
-              <span>Thời gian: {data.recipe.cook_time_minutes} phút</span>
-            ) : null}
-            {data.recipe.difficulty ? (
-              <span>Độ khó: {data.recipe.difficulty}</span>
-            ) : null}
-          </div>
-          {data.recipe.short_note ? (
-            <p className="text-sm text-slate-700">{data.recipe.short_note}</p>
+          {/* OLD: displayed cook_time_minutes, difficulty */}
+          {/* NEW: no longer available in schema */}
+          {data.recipe.description ? (
+            <p className="text-sm text-slate-700">{data.recipe.description}</p>
           ) : null}
         </header>
 
@@ -379,25 +366,21 @@ export default function RecipeDetailPage() {
             </span>
 
             <span className="text-slate-500">
-              (Core: có{" "}
-              <span className="font-semibold text-emerald-700">
-                {ingredientStats.coreHave}
-              </span>
-              , thiếu{" "}
+              (Cần mua:{" "}
               <span className="font-semibold text-amber-700">
-                {ingredientStats.coreMiss}
+                {ingredientStats.requiredMiss}
               </span>
               )
             </span>
           </div>
 
           <ul className="flex flex-col gap-3">
-            {(sortedIngredients ?? []).map((item) => {
+            {(sortedIngredients ?? []).map((item, index) => {
               const hasIt = item.key ? ownedKeysSet.has(item.key) : false;
 
               return (
                 <li
-                  key={item.key ?? `${item.display_name}-${item.role}`}
+                  key={item.key ?? `${item.ingredient_text}-${index}`}
                   className={[
                     "flex items-start justify-between gap-3 rounded-md border p-3",
                     hasIt
@@ -408,25 +391,25 @@ export default function RecipeDetailPage() {
                   <div className="flex items-start gap-3">
                     <label
                       className="sr-only"
-                      htmlFor={`ingredient-checkbox-${item.key ?? item.display_name}`}
+                      htmlFor={`ingredient-checkbox-${item.key ?? item.ingredient_text}`}
                     >
-                      {item.display_name ?? "Nguyên liệu"}
+                      {item.display_name ?? item.ingredient_text ?? "Nguyên liệu"}
                     </label>
 
                     <input
-                      id={`ingredient-checkbox-${item.key ?? item.display_name}`}
+                      id={`ingredient-checkbox-${item.key ?? item.ingredient_text}`}
                       type="checkbox"
                       disabled={!item.key}
                       checked={item.key ? checked.has(item.key) : false}
                       onChange={() => toggleChecked(item.key)}
                       className="mt-1 h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 disabled:opacity-40"
-                      title={item.display_name ?? "Nguyên liệu"}
+                      title={item.display_name ?? item.ingredient_text ?? "Nguyên liệu"}
                     />
 
                     <div className="flex flex-col">
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-semibold text-slate-900">
-                          {item.display_name ?? "Nguyên liệu"}
+                          {item.display_name ?? item.ingredient_text ?? "Nguyên liệu"}
                         </span>
 
                         <span
@@ -440,24 +423,20 @@ export default function RecipeDetailPage() {
                           {hasIt ? "Đang có" : "Còn thiếu"}
                         </span>
 
-                        <span className="text-xs text-slate-600">
-                          {item.role === "core" && !item.is_pantry_default
-                            ? "Bắt buộc"
-                            : item.is_pantry_default
-                              ? "Gia vị mặc định"
-                              : "Tùy chọn"}
-                        </span>
+                        {item.is_core_default && (
+                          <span className="text-xs text-slate-600">
+                            Gia vị mặc định
+                          </span>
+                        )}
                       </div>
 
-                      {item.amount ? (
-                        <span className="text-sm text-slate-700">
-                          {item.amount}
-                          {item.unit ? ` ${item.unit}` : ""}
-                          {item.note ? ` (${item.note})` : ""}
-                        </span>
-                      ) : item.note ? (
-                        <span className="text-sm text-slate-700">{item.note}</span>
-                      ) : null}
+                      {/* Show raw ingredient text if display_name differs */}
+                      {item.display_name && item.ingredient_text &&
+                        item.display_name !== item.ingredient_text && (
+                          <span className="text-xs text-slate-500">
+                            ({item.ingredient_text})
+                          </span>
+                        )}
                     </div>
                   </div>
                 </li>
@@ -471,16 +450,25 @@ export default function RecipeDetailPage() {
           <ol className="flex flex-col gap-3">
             {(data.steps ?? []).map((step) => (
               <li
-                key={step.step_no}
+                key={step.step_index}
                 className="rounded-md border border-slate-200 p-3"
               >
                 <div className="mb-1 text-sm font-semibold text-slate-900">
-                  Bước {step.step_no}
+                  Bước {step.step_index}
                 </div>
-                <p className="text-sm text-slate-700">{step.content}</p>
-                {step.tip ? (
-                  <p className="mt-1 text-xs text-slate-500">Mẹo: {step.tip}</p>
-                ) : null}
+                <p className="text-sm text-slate-700">{step.step_text}</p>
+                {/* OLD: had tip field */}
+                {/* NEW: has step_image instead */}
+                {step.step_image && (
+                  <div className="mt-2">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={step.step_image}
+                      alt={`Bước ${step.step_index}`}
+                      className="rounded-md max-h-48 object-cover"
+                    />
+                  </div>
+                )}
               </li>
             ))}
           </ol>
