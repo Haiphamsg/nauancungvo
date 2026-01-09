@@ -4,6 +4,9 @@
 -- Run this if you got "duplicate key value violates unique constraint" error
 -- ============================================================================
 
+-- Step 0: Add slug column if not exists
+ALTER TABLE recipes ADD COLUMN IF NOT EXISTS slug text;
+
 -- Step 1: Drop the existing unique constraint (if exists)
 ALTER TABLE recipes DROP CONSTRAINT IF EXISTS recipes_slug_unique;
 
@@ -55,7 +58,8 @@ END $$;
 -- Step 6: Now add unique constraint
 ALTER TABLE recipes ADD CONSTRAINT recipes_slug_unique UNIQUE (slug);
 
-RAISE NOTICE '✓ Unique constraint added successfully';
+-- Verify constraint was added
+SELECT 'Unique constraint added successfully' as status;
 
 -- Show sample slugs
 SELECT recipe_id, name, slug FROM recipes WHERE slug IS NOT NULL LIMIT 10;
