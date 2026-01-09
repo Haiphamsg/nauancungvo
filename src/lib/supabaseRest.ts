@@ -3,9 +3,12 @@
  * Dùng cho client-side fetching (với ANON key)
  */
 
-import { env } from "@/lib/env";
+import { env, getServerEnv } from "./env";
 
-function headers() {
+/**
+ * Headers for client‑side SELECT (public anon key)
+ */
+function clientHeaders() {
   return {
     apikey: env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     Authorization: `Bearer ${env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
@@ -14,7 +17,19 @@ function headers() {
 }
 
 /**
- * SELECT query via REST API
+ * Headers for server‑side RPC (service‑role key)
+ */
+function serverHeaders() {
+  const { SUPABASE_SERVICE_ROLE_KEY } = getServerEnv();
+  return {
+    apikey: SUPABASE_SERVICE_ROLE_KEY,
+    Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+    "Content-Type": "application/json",
+  };
+}
+
+/**
+ * SELECT query via REST API (client‑side)
  */
 export async function sbSelect<T>(
   path: string,
@@ -28,7 +43,7 @@ export async function sbSelect<T>(
 
   const url = `${env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/${path}${qs.toString() ? `?${qs}` : ""}`;
 
-  const res = await fetch(url, { headers: headers(), cache: "no-store" });
+  const res = await fetch(url, { headers: clientHeaders(), cache: "no-store" });
   if (!res.ok) {
     throw new Error(`Supabase ${res.status}: ${await res.text()}`);
   }
@@ -36,13 +51,13 @@ export async function sbSelect<T>(
 }
 
 /**
- * RPC call via REST API
+ * RPC call via REST API (server‑side, uses service‑role key)
  */
 export async function sbRpc<T>(fn: string, body: Record<string, unknown>): Promise<T> {
   const url = `${env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/rpc/${fn}`;
   const res = await fetch(url, {
     method: "POST",
-    headers: headers(),
+    headers: serverHeaders(),
     body: JSON.stringify(body),
   });
   if (!res.ok) {
