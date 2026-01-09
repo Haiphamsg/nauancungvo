@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServer } from "@/lib/supabase/server";
+import { logger } from "@/lib/logger";
 import type { IngredientGroup, IngredientListItem } from "@/lib/types";
 
 const allowedGroups: Set<IngredientGroup> = new Set([
@@ -55,11 +56,9 @@ export async function GET(request: NextRequest) {
 
       const { data, error } = await query;
 
-      // DEBUG: Log raw response
-      console.log("[API/ingredients] Raw response:", {
+      logger.debug("API/ingredients raw response:", {
         dataLength: data?.length ?? 0,
         error: error?.message ?? null,
-        sample: data?.slice(0, 3) ?? [],
       });
 
       if (error) throw error;
@@ -78,7 +77,7 @@ export async function GET(request: NextRequest) {
         };
       });
 
-      console.log("[API/ingredients] Returning items:", items.length);
+      logger.debug("API/ingredients returning items:", items.length);
       return NextResponse.json({ items });
     }
 
@@ -152,9 +151,8 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ items });
   } catch (e: any) {
-    console.error("INGREDIENTS_FETCH_ERROR", e);
-    console.error("CAUSE", e?.cause);
-    console.error("STACK", e?.stack);
+    logger.error("INGREDIENTS_FETCH_ERROR", e);
+    if (e?.cause) logger.error("CAUSE", e.cause);
 
     return Response.json(
       {

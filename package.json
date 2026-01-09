@@ -7,6 +7,8 @@
     "build": "next build",
     "start": "NODE_ENV=production node server.js",
     "lint": "eslint",
+    "test": "vitest",
+    "test:coverage": "vitest run --coverage",
     "smoke": "ts-node --transpile-only scripts/smoke.ts"
   },
   "dependencies": {
@@ -17,14 +19,20 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.1",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@vitejs/plugin-react": "^5.1.2",
     "babel-plugin-react-compiler": "1.0.0",
     "eslint": "^9",
     "eslint-config-next": "16.0.10",
+    "jsdom": "^27.4.0",
     "tailwindcss": "^4",
     "ts-node": "^10.9.2",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.0.16"
   }
 }
