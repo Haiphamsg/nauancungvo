@@ -20,6 +20,8 @@ type RecommendationItem = {
   description?: string | null; // NEW
   core_missing?: number | null;
   missing_core_names?: string[] | null;
+  score?: number;              // NEW: returned by updated function
+  fuzzy_count?: number;        // NEW: returned by updated function
   // REMOVED: category, cook_time_minutes
 };
 
