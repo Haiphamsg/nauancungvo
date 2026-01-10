@@ -8,6 +8,9 @@
 --
 -- ============================================================================
 
+-- Fix: Drop old function first because return type has changed
+DROP FUNCTION IF EXISTS recommend_recipes(text[], int, text, int);
+
 CREATE OR REPLACE FUNCTION recommend_recipes(
   selected_keys text[],
   missing_core_allow int,
