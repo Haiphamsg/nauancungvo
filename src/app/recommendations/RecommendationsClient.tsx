@@ -160,7 +160,7 @@ export default function RecommendationsClient() {
     [items],
   );
   const cookLater = useMemo(
-    () => items.filter((i) => typeof i.core_missing === "number" && i.core_missing > 0).slice(0, 5),
+    () => items.filter((i) => typeof i.core_missing === "number" && i.core_missing > 0 && !i.is_snack).slice(0, 5),
     [items],
   );
   // Món ăn vặt - all snacks
