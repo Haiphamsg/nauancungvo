@@ -135,7 +135,7 @@ RETURNS TABLE (
     -- NEW: 100 - (missing * 10) + tag_bonus (no cook_penalty)
     (100 - (f.missing_count * 10) + f.tag_bonus)::numeric AS score,
     -- is_snack: true if recipe has no required ingredients (all are pantry defaults)
-    (cardinality(f.required_keys) = 0) AS is_snack
+    (COALESCE(cardinality(f.required_keys), 0) = 0) AS is_snack
   FROM filtered f
   ORDER BY 
     score DESC, 

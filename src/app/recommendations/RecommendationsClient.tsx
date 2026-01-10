@@ -163,9 +163,9 @@ export default function RecommendationsClient() {
     () => items.filter((i) => typeof i.core_missing === "number" && i.core_missing > 0 && !i.is_snack).slice(0, 5),
     [items],
   );
-  // Món ăn vặt - all snacks
+  // Món ăn vặt - top 5 snacks
   const snacks = useMemo(
-    () => items.filter((i) => i.is_snack === true),
+    () => items.filter((i) => i.is_snack === true).slice(0, 5),
     [items],
   );
 
