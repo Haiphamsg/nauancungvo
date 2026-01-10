@@ -78,6 +78,9 @@ export default function RecipeDetailPage() {
 
   const [backHref, setBackHref] = useState("/recommendations");
 
+  // Collapse states for sections
+  const [isIngredientsCollapsed, setIsIngredientsCollapsed] = useState(false);
+
   // Build back link + parse keys user đang có
   useEffect(() => {
     const params = new URLSearchParams();
@@ -238,6 +241,12 @@ export default function RecipeDetailPage() {
     return { have, miss, requiredHave, requiredMiss };
   }, [sortedIngredients, ownedKeysSet]);
 
+  // Check if this is a "snack" dish (all ingredients are is_core_default = true)
+  const isSnack = useMemo(() => {
+    if (!data || data.ingredients.length === 0) return false;
+    return data.ingredients.every((i) => i.is_core_default);
+  }, [data]);
+
   // ✅ checkbox = checklist (không liên quan ownedKeysSet)
   const toggleChecked = (key?: string | null) => {
     if (!key) return;
@@ -327,7 +336,14 @@ export default function RecipeDetailPage() {
 
 
         <header className="flex flex-col gap-2">
-          <h1 className="text-2xl font-bold text-slate-900">{data.recipe.name}</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold text-slate-900">{data.recipe.name}</h1>
+            {isSnack && (
+              <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-800">
+                🍿 Món ăn vặt
+              </span>
+            )}
+          </div>
           {/* OLD: displayed cook_time_minutes, difficulty */}
           {/* NEW: no longer available in schema */}
           {data.recipe.description ? (
@@ -336,113 +352,127 @@ export default function RecipeDetailPage() {
         </header>
 
         <section className="flex flex-col gap-3">
-          <h2 className="text-lg font-semibold text-slate-900">Nguyên liệu</h2>
-
-          <div className="flex items-center justify-between gap-3">
-            <button
-              type="button"
-              onClick={handleCopy}
-              className="rounded-md border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 hover:border-emerald-400"
+          <button
+            type="button"
+            onClick={() => setIsIngredientsCollapsed(!isIngredientsCollapsed)}
+            className="flex items-center justify-between w-full text-left"
+          >
+            <h2 className="text-lg font-semibold text-slate-900">Nguyên liệu</h2>
+            <svg
+              className={`h-5 w-5 text-slate-500 transition-transform ${isIngredientsCollapsed ? '' : 'rotate-180'}`}
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
             >
-              Copy danh sách mua sắm
-            </button>
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
 
-            <span className="text-xs text-slate-500">
-              Checkbox = checklist (bạn tự tick)
-            </span>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2 text-sm">
-            <span className="text-slate-600">
-              Bạn đang có{" "}
-              <span className="font-semibold text-emerald-700">
-                {ingredientStats.have}
-              </span>{" "}
-              nguyên liệu, còn thiếu{" "}
-              <span className="font-semibold text-amber-700">
-                {ingredientStats.miss}
-              </span>
-              .
-            </span>
-
-            <span className="text-slate-500">
-              (Cần mua:{" "}
-              <span className="font-semibold text-amber-700">
-                {ingredientStats.requiredMiss}
-              </span>
-              )
-            </span>
-          </div>
-
-          <ul className="flex flex-col gap-3">
-            {(sortedIngredients ?? []).map((item, index) => {
-              const hasIt = item.key ? ownedKeysSet.has(item.key) : false;
-
-              return (
-                <li
-                  key={item.key ?? `${item.ingredient_text}-${index}`}
-                  className={[
-                    "flex items-start justify-between gap-3 rounded-md border p-3",
-                    hasIt
-                      ? "border-emerald-200 bg-emerald-50"
-                      : "border-amber-200 bg-amber-50",
-                  ].join(" ")}
+          {!isIngredientsCollapsed && (
+            <>
+              <div className="flex items-center justify-between gap-3">
+                <button
+                  type="button"
+                  onClick={handleCopy}
+                  className="rounded-md border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 hover:border-emerald-400"
                 >
-                  <div className="flex items-start gap-3">
-                    <label
-                      className="sr-only"
-                      htmlFor={`ingredient-checkbox-${item.key ?? item.ingredient_text}`}
+                  Copy danh sách mua sắm
+                </button>
+
+                <span className="text-xs text-slate-500">
+                  Checkbox = checklist (bạn tự tick)
+                </span>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2 text-sm">
+                <span className="text-slate-600">
+                  Bạn đang có{" "}
+                  <span className="font-semibold text-emerald-700">
+                    {ingredientStats.have}
+                  </span>{" "}
+                  nguyên liệu, còn thiếu{" "}
+                  <span className="font-semibold text-amber-700">
+                    {ingredientStats.miss}
+                  </span>
+                  .
+                </span>
+
+                <span className="text-slate-500">
+                  (Cần mua:{" "}
+                  <span className="font-semibold text-amber-700">
+                    {ingredientStats.requiredMiss}
+                  </span>
+                  )
+                </span>
+              </div>
+
+              <ul className="flex flex-col gap-3">
+                {(sortedIngredients ?? []).map((item, index) => {
+                  const hasIt = item.key ? ownedKeysSet.has(item.key) : false;
+
+                  return (
+                    <li
+                      key={item.key ?? `${item.ingredient_text}-${index}`}
+                      className={[
+                        "flex items-start justify-between gap-3 rounded-md border p-3",
+                        hasIt
+                          ? "border-emerald-200 bg-emerald-50"
+                          : "border-amber-200 bg-amber-50",
+                      ].join(" ")}
                     >
-                      {item.display_name ?? item.ingredient_text ?? "Nguyên liệu"}
-                    </label>
-
-                    <input
-                      id={`ingredient-checkbox-${item.key ?? item.ingredient_text}`}
-                      type="checkbox"
-                      disabled={!item.key}
-                      checked={item.key ? checked.has(item.key) : false}
-                      onChange={() => toggleChecked(item.key)}
-                      className="mt-1 h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 disabled:opacity-40"
-                      title={item.display_name ?? item.ingredient_text ?? "Nguyên liệu"}
-                    />
-
-                    <div className="flex flex-col">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-semibold text-slate-900">
-                          {item.display_name ?? item.ingredient_text ?? "Nguyên liệu"}
-                        </span>
-
-                        <span
-                          className={[
-                            "rounded-full px-2 py-0.5 text-xs font-semibold",
-                            hasIt
-                              ? "bg-emerald-100 text-emerald-800"
-                              : "bg-amber-100 text-amber-800",
-                          ].join(" ")}
+                      <div className="flex items-start gap-3">
+                        <label
+                          className="sr-only"
+                          htmlFor={`ingredient-checkbox-${item.key ?? item.ingredient_text}`}
                         >
-                          {hasIt ? "Đang có" : "Còn thiếu"}
-                        </span>
+                          {item.display_name ?? item.ingredient_text ?? "Nguyên liệu"}
+                        </label>
 
-                        {item.is_core_default && (
-                          <span className="text-xs text-slate-600">
-                            Gia vị mặc định
-                          </span>
-                        )}
+                        <input
+                          id={`ingredient-checkbox-${item.key ?? item.ingredient_text}`}
+                          type="checkbox"
+                          disabled={!item.key}
+                          checked={item.key ? checked.has(item.key) : false}
+                          onChange={() => toggleChecked(item.key)}
+                          className="mt-1 h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 disabled:opacity-40"
+                          title={item.display_name ?? item.ingredient_text ?? "Nguyên liệu"}
+                        />
+
+                        <div className="flex flex-col">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-semibold text-slate-900">
+                              {item.ingredient_text ?? item.display_name ?? "Nguyên liệu"}
+                            </span>
+
+                            <span
+                              className={[
+                                "rounded-full px-2 py-0.5 text-xs font-semibold",
+                                hasIt
+                                  ? "bg-emerald-100 text-emerald-800"
+                                  : "bg-amber-100 text-amber-800",
+                              ].join(" ")}
+                            >
+                              {hasIt ? "Đang có" : "Còn thiếu"}
+                            </span>
+
+
+                          </div>
+
+                          {/* Show raw ingredient text if display_name differs */}
+                          {item.display_name && item.ingredient_text &&
+                            item.display_name !== item.ingredient_text && (
+                              <span className="text-xs text-slate-500">
+                                ({item.ingredient_text})
+                              </span>
+                            )}
+                        </div>
                       </div>
-
-                      {/* Show raw ingredient text if display_name differs */}
-                      {item.display_name && item.ingredient_text &&
-                        item.display_name !== item.ingredient_text && (
-                          <span className="text-xs text-slate-500">
-                            ({item.ingredient_text})
-                          </span>
-                        )}
-                    </div>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
+                    </li>
+                  );
+                })}
+              </ul>
+            </>
+          )}
         </section>
 
         <section className="flex flex-col gap-3">
@@ -454,7 +484,7 @@ export default function RecipeDetailPage() {
                 className="rounded-md border border-slate-200 p-3"
               >
                 <div className="mb-1 text-sm font-semibold text-slate-900">
-                  Bước {step.step_index}
+                  Bước {step.step_index + 1}
                 </div>
                 <p className="text-sm text-slate-700">{step.step_text}</p>
                 {/* OLD: had tip field */}
@@ -464,7 +494,7 @@ export default function RecipeDetailPage() {
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={step.step_image}
-                      alt={`Bước ${step.step_index}`}
+                      alt={`Bước ${step.step_index + 1}`}
                       className="rounded-md max-h-48 object-cover"
                     />
                   </div>

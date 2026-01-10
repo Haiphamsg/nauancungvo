@@ -23,6 +23,8 @@
 --
 -- ============================================================================
 
+DROP FUNCTION IF EXISTS recommend_recipes(text[], int, text, int);
+
 CREATE OR REPLACE FUNCTION recommend_recipes(
   selected_keys text[],
   missing_core_allow int,
@@ -38,7 +40,8 @@ RETURNS TABLE (
   description text,           -- NEW: added for display
   core_missing int,
   missing_core_names text[],
-  score numeric
+  score numeric,
+  is_snack boolean            -- NEW: true if all ingredients are is_core_default
   -- REMOVED: category, cook_time_minutes
 ) AS $$
   WITH params AS (
@@ -130,7 +133,9 @@ RETURNS TABLE (
     -- Score calculation: 
     -- OLD: 100 - (missing * 10) + tag_bonus - cook_penalty
     -- NEW: 100 - (missing * 10) + tag_bonus (no cook_penalty)
-    (100 - (f.missing_count * 10) + f.tag_bonus)::numeric AS score
+    (100 - (f.missing_count * 10) + f.tag_bonus)::numeric AS score,
+    -- is_snack: true if recipe has no required ingredients (all are pantry defaults)
+    (cardinality(f.required_keys) = 0) AS is_snack
   FROM filtered f
   ORDER BY 
     score DESC, 

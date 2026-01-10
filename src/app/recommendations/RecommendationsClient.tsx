@@ -22,6 +22,7 @@ type RecommendationItem = {
   missing_core_names?: string[] | null;
   score?: number;              // NEW: returned by updated function
   fuzzy_count?: number;        // NEW: returned by updated function
+  is_snack?: boolean;          // NEW: true if all ingredients are pantry defaults
   // REMOVED: category, cook_time_minutes
 };
 
@@ -37,6 +38,11 @@ export default function RecommendationsClient() {
   const [items, setItems] = useState<RecommendationItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Collapse states for sections
+  const [isCookNowCollapsed, setIsCookNowCollapsed] = useState(false);
+  const [isCookLaterCollapsed, setIsCookLaterCollapsed] = useState(false);
+  const [isSnacksCollapsed, setIsSnacksCollapsed] = useState(false);
 
   // tránh gọi lại khi signature y hệt
   const lastSignature = useRef<string | null>(null);
@@ -150,11 +156,16 @@ export default function RecommendationsClient() {
 
   // ✅ “Mở là biết nấu gì”
   const cookNow = useMemo(
-    () => items.filter((i) => i.core_missing === 0),
+    () => items.filter((i) => i.core_missing === 0 && !i.is_snack).slice(0, 5),
     [items],
   );
   const cookLater = useMemo(
-    () => items.filter((i) => typeof i.core_missing === "number" && i.core_missing > 0),
+    () => items.filter((i) => typeof i.core_missing === "number" && i.core_missing > 0).slice(0, 5),
+    [items],
+  );
+  // Món ăn vặt - all snacks
+  const snacks = useMemo(
+    () => items.filter((i) => i.is_snack === true),
     [items],
   );
 
@@ -224,56 +235,132 @@ export default function RecommendationsClient() {
             {/* 🍳 Nấu ngay */}
             {cookNow.length > 0 ? (
               <section className="flex flex-col gap-3">
-                <div className="flex items-end justify-between">
-                  <h2 className="text-base font-semibold text-emerald-700">
-                    🍳 Nấu ngay
-                  </h2>
-                  <span className="text-xs text-slate-500">
-                    {cookNow.length} món
-                  </span>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsCookNowCollapsed(!isCookNowCollapsed)}
+                  className="flex items-center justify-between w-full text-left"
+                >
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-base font-semibold text-emerald-700">
+                      🍳 Nấu ngay
+                    </h2>
+                    <span className="text-xs text-slate-500">
+                      {cookNow.length} món
+                    </span>
+                  </div>
+                  <svg
+                    className={`h-5 w-5 text-slate-500 transition-transform ${isCookNowCollapsed ? '' : 'rotate-180'}`}
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
 
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  {cookNow.map((item) => (
-                    <RecipeCard
-                      key={item.slug}
-                      name={item.name}
-                      slug={item.slug}
-                      imageUrl={item.hero_image}  // OLD: image_url
-                      core_missing={item.core_missing}
-                      missing_core_names={item.missing_core_names}
-                      onClick={() => handleCardClick(item.slug)}
-                    />
-                  ))}
-                </div>
+                {!isCookNowCollapsed && (
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    {cookNow.map((item) => (
+                      <RecipeCard
+                        key={item.slug}
+                        name={item.name}
+                        slug={item.slug}
+                        imageUrl={item.hero_image}
+                        core_missing={item.core_missing}
+                        missing_core_names={item.missing_core_names}
+                        onClick={() => handleCardClick(item.slug)}
+                      />
+                    ))}
+                  </div>
+                )}
               </section>
             ) : null}
 
             {/* 🛒 Có thể nấu */}
             {cookLater.length > 0 ? (
               <section className="flex flex-col gap-3">
-                <div className="flex items-end justify-between">
-                  <h2 className="text-base font-semibold text-slate-800">
-                    🛒 Có thể nấu (thiếu ít)
-                  </h2>
-                  <span className="text-xs text-slate-500">
-                    {cookLater.length} món
-                  </span>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsCookLaterCollapsed(!isCookLaterCollapsed)}
+                  className="flex items-center justify-between w-full text-left"
+                >
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-base font-semibold text-slate-800">
+                      🛒 Có thể nấu (thiếu ít)
+                    </h2>
+                    <span className="text-xs text-slate-500">
+                      {cookLater.length} món
+                    </span>
+                  </div>
+                  <svg
+                    className={`h-5 w-5 text-slate-500 transition-transform ${isCookLaterCollapsed ? '' : 'rotate-180'}`}
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
 
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  {cookLater.map((item) => (
-                    <RecipeCard
-                      key={item.slug}
-                      name={item.name}
-                      slug={item.slug}
-                      imageUrl={item.hero_image}  // OLD: image_url
-                      core_missing={item.core_missing}
-                      missing_core_names={item.missing_core_names}
-                      onClick={() => handleCardClick(item.slug)}
-                    />
-                  ))}
-                </div>
+                {!isCookLaterCollapsed && (
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    {cookLater.map((item) => (
+                      <RecipeCard
+                        key={item.slug}
+                        name={item.name}
+                        slug={item.slug}
+                        imageUrl={item.hero_image}
+                        core_missing={item.core_missing}
+                        missing_core_names={item.missing_core_names}
+                        onClick={() => handleCardClick(item.slug)}
+                      />
+                    ))}
+                  </div>
+                )}
+              </section>
+            ) : null}
+
+            {/* 🍿 Món ăn vặt */}
+            {snacks.length > 0 ? (
+              <section className="flex flex-col gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsSnacksCollapsed(!isSnacksCollapsed)}
+                  className="flex items-center justify-between w-full text-left"
+                >
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-base font-semibold text-amber-700">
+                      🍿 Món ăn vặt
+                    </h2>
+                    <span className="text-xs text-slate-500">
+                      {snacks.length} món
+                    </span>
+                  </div>
+                  <svg
+                    className={`h-5 w-5 text-slate-500 transition-transform ${isSnacksCollapsed ? '' : 'rotate-180'}`}
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+
+                {!isSnacksCollapsed && (
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    {snacks.map((item) => (
+                      <RecipeCard
+                        key={item.slug}
+                        name={item.name}
+                        slug={item.slug}
+                        imageUrl={item.hero_image}
+                        core_missing={item.core_missing}
+                        missing_core_names={item.missing_core_names}
+                        onClick={() => handleCardClick(item.slug)}
+                      />
+                    ))}
+                  </div>
+                )}
               </section>
             ) : null}
           </div>
