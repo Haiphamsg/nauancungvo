@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { getServerEnv } from "@/lib/env";
+import fetch from "node-fetch";
 
 /**
  * Server‑only Supabase client (uses service‑role key).
@@ -16,5 +17,9 @@ export function createSupabaseServer() {
     throw new Error("Missing SUPABASE_SERVICE_ROLE_KEY (environment variable)");
   }
 
-  return createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+  return createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+    global: {
+      fetch: fetch as any,
+    },
+  });
 }

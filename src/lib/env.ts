@@ -39,9 +39,13 @@ export const env = {
 
 // Server-only env vars (không expose ra client)
 export function getServerEnv() {
+    // Đọc trực tiếp từ process.env tại runtime (không dùng const env vì nó được set lúc build time)
+    const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+
     return {
-        SUPABASE_SERVICE_ROLE_KEY: getEnvVar("SUPABASE_SERVICE_ROLE_KEY"),
-        SUPABASE_URL: getEnvVar("SUPABASE_URL", false) || env.NEXT_PUBLIC_SUPABASE_URL,
+        SUPABASE_URL: supabaseUrl,
+        SUPABASE_SERVICE_ROLE_KEY: serviceRoleKey,
     };
 }
 

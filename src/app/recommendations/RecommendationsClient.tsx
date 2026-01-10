@@ -6,7 +6,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 
 import { RecipeCard } from "@/components/RecipeCard";
 import { parseKeysParam, buildQueryParams } from "@/lib/query";
-import { sbRpc } from "@/lib/supabaseRest";
 import { toUiError } from "@/lib/errors";
 import { ErrorBox } from "@/components/ErrorBox";
 
@@ -66,17 +65,28 @@ export default function RecommendationsClient() {
         setLoading(true);
         setError(null);
 
-        // RPC trả thẳng array rows
-        const rows = await sbRpc<RecommendationItem[]>("recommend_recipes", {
-          selected_keys: keys,
-          prefer_tag: tag,
-          limit_n: 30,
-          missing_core_allow: 2,
+        // Route through API instead of direct Supabase call
+        // This ensures env vars are read at runtime on the server
+        const response = await fetch("/api/recommend", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            selected_keys: keys,
+            prefer_tag: tag,
+            limit_n: 30,
+            missing_core_allow: 2,
+          }),
         });
 
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error || `API error: ${response.status}`);
+        }
+
+        const data = await response.json();
         if (controller.signal.aborted) return;
 
-        setItems(rows ?? []);
+        setItems(data.items ?? []);
       } catch (err) {
         lastSignature.current = null;
         if (controller.signal.aborted) return;
@@ -179,8 +189,8 @@ export default function RecommendationsClient() {
               type="button"
               onClick={() => handleTagChange(value)}
               className={`rounded-full px-3 py-2 text-sm font-semibold transition ${tag === value
-                  ? "bg-emerald-600 text-white"
-                  : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                ? "bg-emerald-600 text-white"
+                : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                 }`}
             >
               {tagLabels[value]}

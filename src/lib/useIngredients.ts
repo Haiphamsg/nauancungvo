@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { sbSelect } from "@/lib/supabaseRest";
 import { logger } from "@/lib/logger";
 
 export type Ingredient = {
@@ -51,21 +50,25 @@ function writeCache(items: Ingredient[]) {
 }
 
 async function fetchIngredientsFromSupabase(): Promise<Ingredient[]> {
-    // OLD: v_ingredients_final (view), group_final, is_core_final
-    // NEW: ingredients (table), group, is_core_default
-    logger.debug("Fetching ingredients from Supabase...");
+    // Route through API instead of direct Supabase call
+    // This ensures env vars are read at runtime on the server
+    logger.debug("Fetching ingredients from API...");
 
-    const rows = await sbSelect<Ingredient[]>("ingredients", {
-        select: "id,key,display_name,group,is_core_default,search_text,key_norm",
-        order: "display_name.asc",  // sort alphabetically
-    });
+    const response = await fetch("/api/ingredients");
+
+    if (!response.ok) {
+        throw new Error(`API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const rows = data.items ?? [];
 
     logger.debug("Ingredients fetched:", {
         count: rows?.length ?? 0,
         sample: rows?.slice(0, 3) ?? [],
     });
 
-    return rows ?? [];
+    return rows;
 }
 
 export function useIngredients() {

@@ -19,6 +19,14 @@ export async function GET() {
       ? "[SET]"
       : null,
 
+    NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+      ? "[SET]"
+      : null,
+
+    SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY
+      ? "[SET]"
+      : null,
+
     memory_usage: process.memoryUsage(),
   });
 }
