@@ -47,3 +47,4 @@ SELECT tablename, policyname, cmd
 FROM pg_policies 
 WHERE schemaname = 'public' 
   AND tablename IN ('ingredients', 'recipes', 'recipe_ingredients', 'recipe_steps', 'ingredient_aliases');
+

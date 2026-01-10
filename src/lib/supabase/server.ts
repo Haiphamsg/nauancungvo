@@ -1,17 +1,20 @@
 import { createClient } from "@supabase/supabase-js";
+import { getServerEnv } from "@/lib/env";
 
-// Server-only. Never import in client components.
+/**
+ * Server‑only Supabase client (uses service‑role key).
+ * Falls back to the public URL if the explicit SUPABASE_URL env var is missing –
+ * this prevents a hard crash in production when only the public vars are set.
+ */
 export function createSupabaseServer() {
-  const url = process.env.SUPABASE_URL;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } = getServerEnv();
 
-  if (!url) {
-    throw new Error("Missing SUPABASE_URL");
+  if (!SUPABASE_URL) {
+    throw new Error("Missing SUPABASE_URL (environment variable)");
+  }
+  if (!SUPABASE_SERVICE_ROLE_KEY) {
+    throw new Error("Missing SUPABASE_SERVICE_ROLE_KEY (environment variable)");
   }
 
-  if (!serviceRoleKey) {
-    throw new Error("Missing SUPABASE_SERVICE_ROLE_KEY");
-  }
-
-  return createClient(url, serviceRoleKey);
+  return createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 }
