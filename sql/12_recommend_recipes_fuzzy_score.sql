@@ -56,9 +56,8 @@ RETURNS TABLE (
       ) AS required_names,
       
       -- Count fuzzy matches
-      -- We assume 'match_status' column exists on 'ingredient_aliases' table
-      -- and value is 'fuzzy_matched'
-      count(*) FILTER (WHERE ia.match_status = 'fuzzy_matched') as fuzzy_match_count
+      -- FIXED: match_status is on recipe_ingredients (ri), not ingredient_aliases (ia)
+      count(*) FILTER (WHERE ri.match_status = 'fuzzy_matched') as fuzzy_match_count
       
     FROM recipes r
     LEFT JOIN recipe_ingredients ri ON ri.recipe_id = r.recipe_id
